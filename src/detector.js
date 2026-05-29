@@ -5,7 +5,7 @@
 import { toUnicode } from './punycode.js'
 import { skeleton, isMixedScript, hasNonAscii } from './confusables.js'
 import { parseHost } from './psl.js'
-import { BRANDS, LEGIT_DOMAINS, COMBO_LABELS } from './brands.js'
+import { BRANDS, LEGIT_DOMAINS, DOMAIN_TO_BRAND, COMBO_LABELS } from './brands.js'
 
 export const Verdict = {
   SAFE: 'safe',
@@ -75,8 +75,15 @@ export function analyze(url) {
   const { registrable, core } = parseHost(asciiHost)
 
   // 1) Allow-list: the real brand sites and any of their sub-domains.
+  //    `trusted` marks a verified brand domain so the UI can show a green shield.
   if (LEGIT_DOMAINS.has(registrable) || LEGIT_DOMAINS.has(asciiHost)) {
-    return { verdict: Verdict.SAFE, hostname: asciiHost }
+    return {
+      verdict: Verdict.SAFE,
+      trusted: true,
+      brand: DOMAIN_TO_BRAND.get(asciiHost) || DOMAIN_TO_BRAND.get(registrable),
+      hostname: asciiHost,
+      registrable,
+    }
   }
 
   const unicodeHost = toUnicode(asciiHost)
@@ -117,6 +124,7 @@ export function analyze(url) {
       reason,
       brand: best.brand.display,
       hostname: asciiHost,
+      registrable,
       unicodeHost: isPuny ? unicodeHost : undefined,
       suggestion: best.brand.domains[0],
       distance: best.dist,
@@ -130,6 +138,7 @@ export function analyze(url) {
         verdict: Verdict.WARNING,
         reason: Reason.MIXED_SCRIPT,
         hostname: asciiHost,
+        registrable,
         unicodeHost: isPuny ? unicodeHost : undefined,
       }
     }
@@ -148,11 +157,12 @@ export function analyze(url) {
           reason: Reason.COMBOSQUAT,
           brand: brand ? brand.display : comboLabel,
           hostname: asciiHost,
+          registrable,
           suggestion: brand ? brand.domains[0] : undefined,
         }
       }
     }
   }
 
-  return { verdict: Verdict.SAFE, hostname: asciiHost }
+  return { verdict: Verdict.SAFE, hostname: asciiHost, registrable }
 }
