@@ -12,7 +12,7 @@ const ALLOW_KEY = 'allowlist'
 // User's persistent settings.
 const SETTINGS_KEY = 'settings'
 
-const defaultSettings = { enabled: true, blockWarnings: true }
+const defaultSettings = { enabled: true, blockWarnings: true, badges: true }
 
 async function getSettings() {
   const { [SETTINGS_KEY]: s } = await chrome.storage.local.get(SETTINGS_KEY)
@@ -85,6 +85,26 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
     if (msg.type === 'analyze' && msg.url) {
       sendResponse(analyze(msg.url))
+      return
+    }
+    if (msg.type === 'analyzeBatch' && Array.isArray(msg.urls)) {
+      // Used by the content script to badge links. Returns a slim result per URL.
+      const settings = await getSettings()
+      if (!settings.badges) {
+        sendResponse({ badges: false, results: [] })
+        return
+      }
+      const results = msg.urls.map((u) => {
+        const r = analyze(u)
+        return {
+          verdict: r.verdict,
+          trusted: !!r.trusted,
+          reason: r.reason,
+          brand: r.brand,
+          registrable: r.registrable,
+        }
+      })
+      sendResponse({ badges: true, results })
       return
     }
     if (msg.type === 'getState') {
