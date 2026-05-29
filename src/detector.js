@@ -5,7 +5,7 @@
 import { toUnicode } from './punycode.js'
 import { skeleton, isMixedScript, hasNonAscii } from './confusables.js'
 import { parseHost } from './psl.js'
-import { BRANDS, LEGIT_DOMAINS, COMBO_LABELS } from './brands.js'
+import { BRANDS, LEGIT_DOMAINS, COMBO_LABELS, getBrandByDomain } from './brands.js'
 
 export const Verdict = {
   SAFE: 'safe',
@@ -76,7 +76,12 @@ export function analyze(url) {
 
   // 1) Allow-list: the real brand sites and any of their sub-domains.
   if (LEGIT_DOMAINS.has(registrable) || LEGIT_DOMAINS.has(asciiHost)) {
-    return { verdict: Verdict.SAFE, hostname: asciiHost }
+    const brandInfo = getBrandByDomain(registrable) || getBrandByDomain(asciiHost)
+    return { 
+      verdict: Verdict.SAFE, 
+      hostname: asciiHost,
+      brand: brandInfo ? brandInfo.display : undefined 
+    }
   }
 
   const unicodeHost = toUnicode(asciiHost)

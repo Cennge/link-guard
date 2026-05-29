@@ -80,3 +80,13 @@ for (const brand of BRANDS) {
 export const COMBO_LABELS = BRANDS
   .map((b) => b.label)
   .filter((l) => l.length >= 5 && !['apple', 'chase', 'steam', 'kraken'].includes(l))
+
+// Helper to get brand info (label and display name) by its legit domain
+export function getBrandByDomain(domain) {
+  for (const brand of BRANDS) {
+    if (brand.domains.includes(domain)) {
+      return { label: brand.label, display: brand.display };
+    }
+  }
+  return null;
+}
