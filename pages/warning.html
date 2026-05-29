@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkGuard — предупреждение о фишинге</title>
+  <link rel="stylesheet" href="warning.css">
+</head>
+<body>
+  <main class="card" id="card">
+    <div class="shield" id="shield">🛡️</div>
+    <h1 id="title">Осторожно: похоже на фишинг</h1>
+    <p class="lead" id="lead"></p>
+
+    <div class="host-box">
+      <div class="host-row">
+        <span class="host-label">Вы переходите на:</span>
+        <span class="host-value danger-text" id="host"></span>
+      </div>
+      <div class="host-row" id="unicode-row" hidden>
+        <span class="host-label">Реальные символы (IDN):</span>
+        <span class="host-value danger-text" id="unicode"></span>
+      </div>
+      <div class="host-row" id="suggest-row" hidden>
+        <span class="host-label">Возможно, вы искали:</span>
+        <span class="host-value safe-text" id="suggestion"></span>
+      </div>
+    </div>
+
+    <p class="explain" id="explain"></p>
+
+    <div class="actions">
+      <button class="btn btn-safe" id="back">← Вернуться в безопасность</button>
+      <a class="btn btn-suggest" id="goto-real" hidden></a>
+      <button class="btn btn-danger" id="proceed">Всё равно перейти (опасно)</button>
+    </div>
+
+    <p class="footnote">Проверку выполнило расширение <strong>LinkGuard</strong> локально, без передачи данных в сеть.</p>
+  </main>
+
+  <script src="warning.js"></script>
+</body>
+</html>

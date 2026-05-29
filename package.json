@@ -1,0 +1,10 @@
+{
+  "name": "linkguard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Manifest V3 extension protecting against typosquatting and homograph phishing.",
+  "scripts": {
+    "test": "node test/detector.test.js"
+  }
+}

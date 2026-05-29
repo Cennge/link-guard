@@ -1,0 +1,66 @@
+* { box-sizing: border-box; }
+
+body {
+  width: 300px;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: #1d1f23;
+  background: #fff;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #1e7e34;
+  color: #fff;
+}
+
+.logo { font-weight: 700; font-size: 15px; }
+
+.status {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.status.off { background: rgba(0, 0, 0, 0.25); }
+
+section { padding: 12px 14px; border-bottom: 1px solid #eef0f2; }
+
+.current-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.current-host {
+  font-family: 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-all;
+  margin: 4px 0;
+}
+
+.current-verdict { font-size: 13px; font-weight: 600; }
+.current-verdict.safe { color: #1e7e34; }
+.current-verdict.warning { color: #b9770e; }
+.current-verdict.danger { color: #c0392b; }
+
+.stats { display: flex; gap: 12px; }
+
+.stat { flex: 1; text-align: center; background: #f7f8fa; border-radius: 8px; padding: 8px; }
+.stat-num { font-size: 22px; font-weight: 700; }
+.stat-cap { font-size: 11px; color: #6b7280; }
+
+.toggles { display: flex; flex-direction: column; gap: 10px; }
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toggle input { width: 16px; height: 16px; cursor: pointer; }
+
+footer { padding: 10px 14px; font-size: 11px; color: #9aa0a6; border: none; }
