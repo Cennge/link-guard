@@ -1,0 +1,33 @@
+/* Inline trust/warning badge LinkGuard injects next to outbound links. */
+.lg-badge {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin: 0 3px 0 0;
+  vertical-align: -2px;
+  flex: 0 0 auto;
+  line-height: 0;
+  border-radius: 50%;
+  cursor: help;
+  /* don't inherit weird text styling from the host page */
+  font-size: 0;
+  text-indent: 0;
+}
+
+.lg-badge svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
+  /* some sites flip/rotate all SVGs — keep our badge upright */
+  transform: none !important;
+  vertical-align: baseline !important;
+}
+
+/* subtle pop-in so it doesn't feel like a layout glitch */
+@keyframes lg-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.lg-badge { animation: lg-pop 0.15s ease-out; }

@@ -71,8 +71,13 @@ export const BRANDS = [
 
 // Flat set of every legitimate registrable domain, for O(1) allow-listing.
 export const LEGIT_DOMAINS = new Set()
+// Maps each legitimate domain to its brand display name (for "trusted" badges).
+export const DOMAIN_TO_BRAND = new Map()
 for (const brand of BRANDS) {
-  for (const d of brand.domains) LEGIT_DOMAINS.add(d)
+  for (const d of brand.domains) {
+    LEGIT_DOMAINS.add(d)
+    if (!DOMAIN_TO_BRAND.has(d)) DOMAIN_TO_BRAND.set(d, brand.display)
+  }
 }
 
 // Distinctive brand labels used for combosquatting detection. Short or

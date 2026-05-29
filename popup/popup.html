@@ -3,22 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <title>LinkGuard</title>
-  <style>
-    body {
-      width: 220px;
-      height: 120px;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      color: #1e7e34;
-    }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
-<body>
-  ТЕСТ
+<body data-verdict="loading" data-enabled="true">
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-logo" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/>
+      </svg>
+      <span>LinkGuard</span>
+    </div>
+    <button class="power" id="power" type="button" role="switch" aria-checked="true" title="Включить / выключить защиту">
+      <span class="power-dot"></span>
+      <span class="power-text" id="power-text">Защита</span>
+    </button>
+  </header>
+
+  <!-- Hero: current site verdict -->
+  <section class="hero" id="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-icon" id="hero-icon"></div>
+    <div class="hero-status" id="hero-status">Проверяем…</div>
+    <div class="hero-host" id="hero-host">
+      <svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 0 0-8 0v2Z"/></svg>
+      <span id="hero-host-text">—</span>
+    </div>
+  </section>
+
+  <!-- Detail card: only when not safe -->
+  <section class="detail" id="detail" hidden>
+    <div class="detail-head">
+      <span class="detail-badge" id="detail-badge"></span>
+      <span class="detail-title" id="detail-title"></span>
+    </div>
+    <p class="detail-text" id="detail-text"></p>
+
+    <div class="compare" id="compare" hidden>
+      <div class="compare-row">
+        <span class="compare-label">Что вы видите</span>
+        <code class="compare-val bad" id="compare-shown"></code>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Реальные символы</span>
+        <code class="compare-val bad" id="compare-real"></code>
+      </div>
+    </div>
+
+    <a class="suggest" id="suggest" hidden>
+      <span class="suggest-label">Перейти на настоящий сайт</span>
+      <span class="suggest-host" id="suggest-host"></span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+    </a>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat-blocked">0</div>
+      <div class="stat-cap">заблокировано</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-num" id="stat-proceeded">0</div>
+      <div class="stat-cap">пропущено вами</div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section class="settings">
+    <label class="setting" for="blockWarnings">
+      <span class="setting-text">
+        Блокировать подозрительные
+        <small>уровень «warning», не только явный фишинг</small>
+      </span>
+      <span class="switch">
+        <input type="checkbox" id="blockWarnings" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </span>
+    </label>
+    <label class="setting" for="badges">
+      <span class="setting-text">
+        Значки доверия у ссылок
+        <small>зелёный щит у проверенных сайтов на странице</small>
+      </span>
+      <span class="switch">
+        <input type="checkbox" id="badges" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </span>
+    </label>
+  </section>
+
+  <footer class="footer">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/></svg>
+    Проверка выполняется локально, без передачи данных в сеть
+  </footer>
+
+  <script src="popup.js"></script>
 </body>
 </html>
