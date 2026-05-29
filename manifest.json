@@ -3,7 +3,6 @@
   "name": "LinkGuard — защита от фишинга",
   "version": "1.0.0",
   "description": "Реальная защита от тайпосквоттинга и гомографических (IDN) фишинговых атак, маскирующихся под популярные бренды.",
-  "default_locale": "ru",
   "minimum_chrome_version": "102",
   "permissions": [
     "webNavigation",
