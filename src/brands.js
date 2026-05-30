@@ -8,36 +8,36 @@
 
 export const BRANDS = [
   // ---- Global tech / social ----
-  { label: 'google', display: 'Google', domains: ['google.com', 'google.co.uk', 'google.de', 'google.ru', 'youtube.com', 'gmail.com', 'googlemail.com'] },
-  { label: 'youtube', display: 'YouTube', domains: ['youtube.com', 'youtu.be'] },
-  { label: 'facebook', display: 'Facebook', domains: ['facebook.com', 'fb.com', 'fb.me'] },
-  { label: 'instagram', display: 'Instagram', domains: ['instagram.com'] },
-  { label: 'whatsapp', display: 'WhatsApp', domains: ['whatsapp.com', 'wa.me'] },
-  { label: 'telegram', display: 'Telegram', domains: ['telegram.org', 'telegram.me', 't.me'] },
-  { label: 'twitter', display: 'Twitter / X', domains: ['twitter.com', 'x.com', 't.co'] },
-  { label: 'linkedin', display: 'LinkedIn', domains: ['linkedin.com', 'lnkd.in'] },
-  { label: 'tiktok', display: 'TikTok', domains: ['tiktok.com'] },
-  { label: 'reddit', display: 'Reddit', domains: ['reddit.com', 'redd.it'] },
-  { label: 'discord', display: 'Discord', domains: ['discord.com', 'discord.gg', 'discordapp.com'] },
+  { label: 'google', display: 'Google', domains: ['gmail.com','google.ac','google.ad','google.ae','google.af','google.ag','google.ai','google.al','google.am','google.as','google.at','google.ax','google.az','google.ba','google.be','google.bf','google.bg','google.bi','google.bj','google.bs','google.bt','google.by','google.ca','google.cat','google.cc','google.cd','google.cf','google.cg','google.ch','google.ci','google.cl','google.cm','google.cn','google.co','google.co.id','google.co.il','google.co.in','google.co.jp','google.co.kr','google.co.th','google.co.uk','google.co.za','google.com','google.com.ar','google.com.au','google.com.br','google.com.hk','google.com.mx','google.com.my','google.com.ph','google.com.sg','google.com.tr','google.com.tw','google.com.ua','google.com.vn','google.cv','google.cz','google.de','google.dev','google.dj','google.dk','google.dm','google.dz','google.ee','google.es','google.eu','google.fi','google.fm','google.fr','google.ga','google.ge','google.gf','google.gg','google.gl','google.gm','google.gp','google.gr','google.gy','google.hk','google.hn','google.hr','google.ht','google.hu','google.ie','google.im','google.in','google.info','google.io','google.iq','google.is','google.it','google.je','google.jo','google.jp','google.kg','google.ki','google.kz','google.la','google.li','google.lk','google.lt','google.lu','google.lv','google.md','google.me','google.mg','google.mk','google.ml','google.mn','google.ms','google.mu','google.mv','google.mw','google.mx','google.ne','google.net','google.ng','google.nl','google.no','google.nr','google.nu','google.org','google.pk','google.pl','google.play','google.pn','google.ps','google.pt','google.ro','google.rs','google.ru','google.rw','google.sc','google.se','google.sh','google.si','google.sk','google.sm','google.sn','google.so','google.sr','google.st','google.td','google.tg','google.tk','google.tl','google.tm','google.tn','google.to','google.tt','google.us','google.uz','google.vg','google.vu','google.ws','googlemail.com','youtube.com'] },
+  { label: 'youtube', display: 'YouTube', domains: ['youtu.be','youtube.ae','youtube.al','youtube.am','youtube.at','youtube.auto','youtube.az','youtube.ba','youtube.be','youtube.bg','youtube.bh','youtube.bo','youtube.by','youtube.ca','youtube.cat','youtube.ch','youtube.cl','youtube.co','youtube.co.id','youtube.co.il','youtube.co.in','youtube.co.jp','youtube.co.kr','youtube.co.th','youtube.co.uk','youtube.co.za','youtube.com','youtube.com.ar','youtube.com.au','youtube.com.br','youtube.com.hk','youtube.com.mx','youtube.com.my','youtube.com.ph','youtube.com.sg','youtube.com.tr','youtube.com.tw','youtube.com.ua','youtube.cr','youtube.cz','youtube.de','youtube.dk','youtube.ee','youtube.es','youtube.fi','youtube.fr','youtube.ge','youtube.gr','youtube.gt','youtube.hk','youtube.hr','youtube.hu','youtube.ie','youtube.in','youtube.iq','youtube.is','youtube.it','youtube.jo','youtube.jp','youtube.kr','youtube.kz','youtube.la','youtube.lk','youtube.lt','youtube.lu','youtube.lv','youtube.ly','youtube.ma','youtube.md','youtube.me','youtube.mk','youtube.mn','youtube.mx','youtube.my','youtube.net','youtube.ng','youtube.ni','youtube.nl','youtube.no','youtube.pa','youtube.pe','youtube.ph','youtube.pk','youtube.pl','youtube.pr','youtube.pt','youtube.qa','youtube.ro','youtube.rs','youtube.ru','youtube.sa','youtube.se','youtube.sg','youtube.si','youtube.sk','youtube.sn','youtube.soy','youtube.sv','youtube.tn','youtube.tv','youtube.ua','youtube.ug','youtube.uy','youtube.video','youtube.vn'] },
+  { label: 'facebook', display: 'Facebook', domains: ['facebook.at','facebook.ca','facebook.co','facebook.com','facebook.com.au','facebook.com.br','facebook.com.mx','facebook.com.vn','facebook.de','facebook.design','facebook.dk','facebook.es','facebook.fr','facebook.hu','facebook.in','facebook.it','facebook.net','facebook.nl','facebook.org','facebook.pl','facebook.ru','facebook.se','facebook.us','fb.com','fb.me'] },
+  { label: 'instagram', display: 'Instagram', domains: ['instagram.co','instagram.com','instagram.com.br','instagram.de','instagram.fr','instagram.net'] },
+  { label: 'whatsapp', display: 'WhatsApp', domains: ['wa.me','whatsapp.com','whatsapp.net'] },
+  { label: 'telegram', display: 'Telegram', domains: ['t.me','telegram.me','telegram.org'] },
+  { label: 'twitter', display: 'Twitter / X', domains: ['t.co','twitter.biz','twitter.co','twitter.com','twitter.com.br','twitter.jp','x.com'] },
+  { label: 'linkedin', display: 'LinkedIn', domains: ['linkedin.at','linkedin.biz','linkedin.cn','linkedin.com','linkedin.com.br','linkedin.de','lnkd.in'] },
+  { label: 'tiktok', display: 'TikTok', domains: ['tiktok.com','tiktok.in','tiktok.me','tiktok.ru','tiktok.shop','tiktok.tv'] },
+  { label: 'reddit', display: 'Reddit', domains: ['redd.it','reddit.com','reddit.tube'] },
+  { label: 'discord', display: 'Discord', domains: ['discord.com','discord.gg','discord.media','discordapp.com'] },
   { label: 'twitch', display: 'Twitch', domains: ['twitch.tv'] },
-  { label: 'github', display: 'GitHub', domains: ['github.com', 'github.io'] },
-  { label: 'microsoft', display: 'Microsoft', domains: ['microsoft.com', 'live.com', 'outlook.com', 'office.com', 'microsoftonline.com', 'msn.com', 'bing.com', 'azure.com'] },
-  { label: 'apple', display: 'Apple', domains: ['apple.com', 'icloud.com', 'me.com'] },
-  { label: 'amazon', display: 'Amazon', domains: ['amazon.com', 'amazon.co.uk', 'amazon.de', 'aws.amazon.com', 'amazonaws.com'] },
-  { label: 'netflix', display: 'Netflix', domains: ['netflix.com'] },
+  { label: 'github', display: 'GitHub', domains: ['github.com','github.io'] },
+  { label: 'microsoft', display: 'Microsoft', domains: ['azure.com','bing.com','live.com','microsoft.ai','microsoft.cloud','microsoft.cn','microsoft.co.il','microsoft.com','microsoft.de','microsoft.design','microsoft.fr','microsoft.net','microsoft.ru','microsoft.us','microsoftonline.com','msn.com','office.com','outlook.com'] },
+  { label: 'apple', display: 'Apple', domains: ['apple.cn','apple.co','apple.co.jp','apple.com','apple.com.cn','apple.de','apple.fr','apple.news','apple.ru','apple.us','icloud.com','me.com'] },
+  { label: 'amazon', display: 'Amazon', domains: ['amazon.ae','amazon.app','amazon.at','amazon.ca','amazon.cl','amazon.cn','amazon.co','amazon.co.jp','amazon.co.uk','amazon.co.za','amazon.com','amazon.com.au','amazon.com.br','amazon.com.mx','amazon.com.sg','amazon.com.tr','amazon.de','amazon.dev','amazon.eg','amazon.es','amazon.eu','amazon.fr','amazon.ie','amazon.in','amazon.io','amazon.it','amazon.jobs','amazon.jp','amazon.me','amazon.net','amazon.nl','amazon.pl','amazon.pt','amazon.ru','amazon.sa','amazon.science','amazon.se','amazon.sg','amazon.vn','amazon.voting','amazon.work','amazon.xyz','amazonaws.com','aws.amazon.com'] },
+  { label: 'netflix', display: 'Netflix', domains: ['netflix.com','netflix.net'] },
   { label: 'spotify', display: 'Spotify', domains: ['spotify.com'] },
   { label: 'dropbox', display: 'Dropbox', domains: ['dropbox.com'] },
-  { label: 'adobe', display: 'Adobe', domains: ['adobe.com'] },
-  { label: 'yahoo', display: 'Yahoo', domains: ['yahoo.com'] },
-  { label: 'ebay', display: 'eBay', domains: ['ebay.com', 'ebay.co.uk', 'ebay.de'] },
-  { label: 'steam', display: 'Steam', domains: ['steampowered.com', 'steamcommunity.com'] },
+  { label: 'adobe', display: 'Adobe', domains: ['adobe.com','adobe.io','adobe.net'] },
+  { label: 'yahoo', display: 'Yahoo', domains: ['yahoo.co.jp','yahoo.com','yahoo.net'] },
+  { label: 'ebay', display: 'eBay', domains: ['ebay.at','ebay.be','ebay.ca','ebay.ch','ebay.cn','ebay.co','ebay.co.jp','ebay.co.uk','ebay.com','ebay.com.au','ebay.com.cn','ebay.com.hk','ebay.com.my','ebay.com.sg','ebay.de','ebay.es','ebay.eu','ebay.fr','ebay.ie','ebay.in','ebay.it','ebay.la','ebay.ng','ebay.nl','ebay.ph','ebay.pl','ebay.st','ebay.to','ebay.us'] },
+  { label: 'steam', display: 'Steam', domains: ['steamcommunity.com','steampowered.com'] },
   { label: 'steamcommunity', display: 'Steam Community', domains: ['steamcommunity.com'] },
 
   // ---- Payments / crypto ----
-  { label: 'paypal', display: 'PayPal', domains: ['paypal.com'] },
-  { label: 'stripe', display: 'Stripe', domains: ['stripe.com'] },
+  { label: 'paypal', display: 'PayPal', domains: ['paypal.cn','paypal.co.uk','paypal.com','paypal.com.au','paypal.de','paypal.es','paypal.fr','paypal.gd','paypal.it','paypal.jp','paypal.me'] },
+  { label: 'stripe', display: 'Stripe', domains: ['stripe.com','stripe.dev','stripe.global','stripe.me','stripe.network','stripe.partners'] },
   { label: 'coinbase', display: 'Coinbase', domains: ['coinbase.com'] },
-  { label: 'binance', display: 'Binance', domains: ['binance.com', 'binance.us'] },
+  { label: 'binance', display: 'Binance', domains: ['binance.bh','binance.charity','binance.click','binance.cloud','binance.com','binance.im','binance.info','binance.je','binance.me','binance.org','binance.sg','binance.th','binance.tr','binance.us','binance.vision'] },
   { label: 'metamask', display: 'MetaMask', domains: ['metamask.io'] },
   { label: 'kraken', display: 'Kraken', domains: ['kraken.com'] },
 
@@ -45,39 +45,34 @@ export const BRANDS = [
   { label: 'wellsfargo', display: 'Wells Fargo', domains: ['wellsfargo.com'] },
   { label: 'bankofamerica', display: 'Bank of America', domains: ['bankofamerica.com'] },
   { label: 'chase', display: 'Chase', domains: ['chase.com'] },
-  { label: 'citibank', display: 'Citibank', domains: ['citibank.com', 'citi.com'] },
-  { label: 'hsbc', display: 'HSBC', domains: ['hsbc.com', 'hsbc.co.uk'] },
+  { label: 'citibank', display: 'Citibank', domains: ['citi.com','citibank.ae','citibank.co.id','citibank.co.in','citibank.co.kr','citibank.com','citibank.com.au','citibank.com.br','citibank.com.cn','citibank.com.hk','citibank.com.sg','citibank.pl','citibank.ru'] },
+  { label: 'hsbc', display: 'HSBC', domains: ['hsbc.co.uk','hsbc.com'] },
   { label: 'revolut', display: 'Revolut', domains: ['revolut.com'] },
 
   // ---- Shipping ----
-  { label: 'dhl', display: 'DHL', domains: ['dhl.com', 'dhl.de'] },
+  { label: 'dhl', display: 'DHL', domains: ['dhl.com','dhl.de'] },
   { label: 'fedex', display: 'FedEx', domains: ['fedex.com'] },
   { label: 'usps', display: 'USPS', domains: ['usps.com'] },
 
   // ---- Russia / CIS (audience-relevant) ----
-  { label: 'sberbank', display: 'Сбербанк', domains: ['sberbank.ru', 'sber.ru', 'online.sberbank.ru'] },
-  { label: 'sber', display: 'Сбер', domains: ['sber.ru', 'sberbank.ru'] },
+  { label: 'sberbank', display: 'Сбербанк', domains: ['online.sberbank.ru','sber.ru','sberbank.com','sberbank.ru'] },
+  { label: 'sber', display: 'Сбер', domains: ['sber.ru','sberbank.ru'] },
   { label: 'gosuslugi', display: 'Госуслуги', domains: ['gosuslugi.ru'] },
-  { label: 'tinkoff', display: 'Т-Банк (Тинькофф)', domains: ['tinkoff.ru', 'tbank.ru'] },
-  { label: 'alfabank', display: 'Альфа-Банк', domains: ['alfabank.ru'] },
+  { label: 'tinkoff', display: 'Т-Банк (Тинькофф)', domains: ['tbank.ru','tinkoff.ru'] },
+  { label: 'alfabank', display: 'Альфа-Банк', domains: ['alfabank.by','alfabank.com','alfabank.com.ua','alfabank.kz','alfabank.ru','alfabank.st'] },
   { label: 'vtb', display: 'ВТБ', domains: ['vtb.ru'] },
-  { label: 'yandex', display: 'Яндекс', domains: ['yandex.ru', 'yandex.com', 'ya.ru'] },
-  { label: 'vk', display: 'ВКонтакте', domains: ['vk.com', 'vk.ru', 'vkontakte.ru'] },
+  { label: 'yandex', display: 'Яндекс', domains: ['ya.ru','yandex.by','yandex.com','yandex.com.tr','yandex.kz','yandex.net','yandex.ru'] },
+  { label: 'vk', display: 'ВКонтакте', domains: ['vk.com','vk.ru','vkontakte.ru'] },
   { label: 'ozon', display: 'Ozon', domains: ['ozon.ru'] },
-  { label: 'wildberries', display: 'Wildberries', domains: ['wildberries.ru', 'wb.ru'] },
+  { label: 'wildberries', display: 'Wildberries', domains: ['wb.ru','wildberries.ru'] },
   { label: 'mailru', display: 'Mail.ru', domains: ['mail.ru'] },
-  { label: 'avito', display: 'Авито', domains: ['avito.ru'] },
+  { label: 'avito', display: 'Авито', domains: ['avito.ru','avito.st'] },
 ]
 
 // Flat set of every legitimate registrable domain, for O(1) allow-listing.
 export const LEGIT_DOMAINS = new Set()
-// Maps each legitimate domain to its brand display name (for "trusted" badges).
-export const DOMAIN_TO_BRAND = new Map()
 for (const brand of BRANDS) {
-  for (const d of brand.domains) {
-    LEGIT_DOMAINS.add(d)
-    if (!DOMAIN_TO_BRAND.has(d)) DOMAIN_TO_BRAND.set(d, brand.display)
-  }
+  for (const d of brand.domains) LEGIT_DOMAINS.add(d)
 }
 
 // Distinctive brand labels used for combosquatting detection. Short or
@@ -85,3 +80,13 @@ for (const brand of BRANDS) {
 export const COMBO_LABELS = BRANDS
   .map((b) => b.label)
   .filter((l) => l.length >= 5 && !['apple', 'chase', 'steam', 'kraken'].includes(l))
+
+// Helper to get brand info (label and display name) by its legit domain
+export function getBrandByDomain(domain) {
+  for (const brand of BRANDS) {
+    if (brand.domains.includes(domain)) {
+      return { label: brand.label, display: brand.display };
+    }
+  }
+  return null;
+}
