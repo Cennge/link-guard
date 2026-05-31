@@ -9,7 +9,7 @@ const TOTAL_BITS = 16000000;
 const HASH_FUNCTIONS = 4;
 
 async function convertCsvToBloomBinary() {
-    const csvFilePath = 'top-1m.csv'; // <--- Укажи здесь имя твоего исходного файла!
+    const csvFilePath = 'cleaned_top_domains.txt'; // <--- Укажи здесь имя твоего исходного файла!
     const binaryOutputPath = 'bloomfilter.bin';
 
     console.log('Инициализация Фильтра Блума...');

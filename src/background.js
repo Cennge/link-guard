@@ -11,6 +11,8 @@ const WARNING_PAGE = chrome.runtime.getURL('pages/warning.html')
 const ALLOW_KEY = 'allowlist'
 // User's persistent settings.
 const SETTINGS_KEY = 'settings'
+const USER_ALLOW_KEY = 'userAllow'
+const USER_BLOCK_KEY = 'userBlock'
 
 const defaultSettings = { enabled: true, blockWarnings: true, badges: true }
 
@@ -28,6 +30,36 @@ async function addToAllowlist(host) {
   const set = await getAllowlist()
   set.add(host)
   await chrome.storage.session.set({ [ALLOW_KEY]: [...set] })
+}
+
+async function getUserAllow() {
+  const { [USER_ALLOW_KEY]: a } = await chrome.storage.local.get(USER_ALLOW_KEY)
+  return new Set(a || [])
+}
+async function addToUserAllow(host) {
+  const set = await getUserAllow()
+  set.add(host)
+  await chrome.storage.local.set({ [USER_ALLOW_KEY]: [...set] })
+}
+async function removeFromUserAllow(host) {
+  const set = await getUserAllow()
+  set.delete(host)
+  await chrome.storage.local.set({ [USER_ALLOW_KEY]: [...set] })
+}
+
+async function getUserBlock() {
+  const { [USER_BLOCK_KEY]: b } = await chrome.storage.local.get(USER_BLOCK_KEY)
+  return new Set(b || [])
+}
+async function addToUserBlock(host) {
+  const set = await getUserBlock()
+  set.add(host)
+  await chrome.storage.local.set({ [USER_BLOCK_KEY]: [...set] })
+}
+async function removeFromUserBlock(host) {
+  const set = await getUserBlock()
+  set.delete(host)
+  await chrome.storage.local.set({ [USER_BLOCK_KEY]: [...set] })
 }
 
 async function bumpStat(key) {
@@ -56,19 +88,44 @@ async function onNavigate(details) {
   const settings = await getSettings()
   if (!settings.enabled) return
 
-  const result = analyze(details.url)
-  if (result.verdict === Verdict.SAFE) return
-  if (result.verdict === Verdict.WARNING && !settings.blockWarnings) return
-
-  // Respect "proceed anyway" for this browsing session.
-  const allow = await getAllowlist()
-  if (result.hostname && allow.has(result.hostname)) return
-
-  await bumpStat('blocked')
   try {
-    await chrome.tabs.update(details.tabId, { url: buildWarningUrl(details.url, result) })
+    const parsed = new URL(details.url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
+    const hostname = parsed.hostname.toLowerCase()
+
+    // 1. Check user block list
+    const userBlock = await getUserBlock()
+    if (userBlock.has(hostname)) {
+      await bumpStat('blocked')
+      try {
+        await chrome.tabs.update(details.tabId, { 
+          url: buildWarningUrl(details.url, { verdict: Verdict.DANGER, reason: 'user_blocked', hostname }) 
+        })
+      } catch {}
+      return
+    }
+
+    // 2. Check user allow list
+    const userAllow = await getUserAllow()
+    if (userAllow.has(hostname)) return
+
+    // 3. Analyze normally
+    const result = analyze(details.url)
+    if (result.verdict === Verdict.SAFE) return
+    if (result.verdict === Verdict.WARNING && !settings.blockWarnings) return
+
+    // Respect "proceed anyway" for this browsing session.
+    const allow = await getAllowlist()
+    if (result.hostname && allow.has(result.hostname)) return
+
+    await bumpStat('blocked')
+    try {
+      await chrome.tabs.update(details.tabId, { url: buildWarningUrl(details.url, result) })
+    } catch {
+      // tab may have been closed mid-navigation; ignore.
+    }
   } catch {
-    // tab may have been closed mid-navigation; ignore.
+    // invalid URL; ignore
   }
 }
 
@@ -80,6 +137,23 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === 'allow' && msg.host) {
       await addToAllowlist(msg.host)
       await bumpStat('proceeded')
+      sendResponse({ ok: true })
+      return
+    }
+    if (msg.type === 'allowAlways' && msg.host) {
+      await addToUserAllow(msg.host)
+      await bumpStat('proceeded')
+      sendResponse({ ok: true })
+      return
+    }
+    if (msg.type === 'blockAlways' && msg.host) {
+      await addToUserBlock(msg.host)
+      sendResponse({ ok: true })
+      return
+    }
+    if (msg.type === 'removeUserRule' && msg.host) {
+      await removeFromUserAllow(msg.host)
+      await removeFromUserBlock(msg.host)
       sendResponse({ ok: true })
       return
     }
