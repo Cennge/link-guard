@@ -17,6 +17,7 @@ const REASON_TEXT = {
   typosquat: `Адрес очень похож на <strong>${brand}</strong>, но написан с искажением (опечаткой). Так работает тайпосквоттинг: вы попадаете на сайт злоумышленника, набрав или кликнув почти правильный адрес.`,
   combosquat: `В адресе используется имя бренда <strong>${brand}</strong>, но сам домен бренду не принадлежит. Мошенники добавляют известное название в чужой домен, чтобы вызвать доверие.`,
   mixed_script: 'В адресе одновременно используются символы из разных алфавитов (например, латиница и кириллица). Легитимные сайты так почти никогда не делают — это типичный признак подделки.',
+  user_blocked: 'Вы лично заблокировали доступ к этому сайту. Чтобы снова заходить на него, вам потребуется удалить правило блокировки в настройках расширения.',
 }
 
 const titleEl = document.getElementById('title')
@@ -64,6 +65,17 @@ document.getElementById('proceed').addEventListener('click', () => {
   )
   if (!ok) return
   chrome.runtime.sendMessage({ type: 'allow', host }, () => {
+    location.replace(target)
+  })
+})
+
+// "Always trust": allow this host permanently.
+document.getElementById('proceed-always').addEventListener('click', () => {
+  const ok = confirm(
+    'Добавить этот сайт в белый список навсегда?\n\nОн больше никогда не будет проверяться или блокироваться. Выполняйте это, только если на 100% уверены, что сайт безопасен.'
+  )
+  if (!ok) return
+  chrome.runtime.sendMessage({ type: 'allowAlways', host }, () => {
     location.replace(target)
   })
 })
