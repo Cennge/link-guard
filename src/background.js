@@ -131,6 +131,63 @@ async function onNavigate(details) {
 
 chrome.webNavigation.onBeforeNavigate.addListener(onNavigate)
 
+// --- Tab Badge Updater ---
+async function updateTabBadge(tabId, url) {
+  if (!url || (!url.startsWith('http:') && !url.startsWith('https:'))) {
+    await chrome.action.setBadgeText({ tabId, text: '' }).catch(() => {})
+    return
+  }
+  const settings = await getSettings()
+  if (!settings.enabled) {
+    await chrome.action.setBadgeText({ tabId, text: '' }).catch(() => {})
+    return
+  }
+
+  const userAllow = await getUserAllow()
+  const userBlock = await getUserBlock()
+  const r = analyze(url)
+  
+  if (r.hostname) {
+    if (userBlock.has(r.hostname)) {
+      r.verdict = Verdict.DANGER
+    } else if (userAllow.has(r.hostname)) {
+      r.verdict = Verdict.SAFE
+      r.trusted = true
+    }
+  }
+
+  let text = ''
+  let color = '#64748b' // default (none)
+
+  if (r.verdict === Verdict.SAFE && r.trusted) {
+    text = '✓'
+    color = '#16a34a' // green
+  } else if (r.verdict === Verdict.WARNING) {
+    text = '!'
+    color = '#d97706' // orange
+  } else if (r.verdict === Verdict.DANGER) {
+    text = 'X'
+    color = '#dc2626' // red
+  }
+
+  try {
+    await chrome.action.setBadgeBackgroundColor({ tabId, color })
+    await chrome.action.setBadgeText({ tabId, text })
+  } catch {}
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url || changeInfo.status === 'complete') {
+    updateTabBadge(tabId, tab.url)
+  }
+})
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId)
+    if (tab && tab.url) updateTabBadge(tab.tabId, tab.url)
+  } catch {}
+})
 // Messages from the warning page / popup.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   ;(async () => {
@@ -158,7 +215,22 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       return
     }
     if (msg.type === 'analyze' && msg.url) {
-      sendResponse(analyze(msg.url))
+      const userAllow = await getUserAllow()
+      const userBlock = await getUserBlock()
+      const r = analyze(msg.url)
+      
+      if (r.hostname) {
+        if (userBlock.has(r.hostname)) {
+          r.verdict = Verdict.DANGER
+          r.reason = 'user_blocked'
+          r.trusted = false
+        } else if (userAllow.has(r.hostname)) {
+          r.verdict = Verdict.SAFE
+          r.reason = 'user_allowed'
+          r.trusted = true
+        }
+      }
+      sendResponse(r)
       return
     }
     if (msg.type === 'analyzeBatch' && Array.isArray(msg.urls)) {
@@ -168,8 +240,25 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse({ badges: false, results: [] })
         return
       }
+      
+      const userAllow = await getUserAllow()
+      const userBlock = await getUserBlock()
+
       const results = msg.urls.map((u) => {
         const r = analyze(u)
+        
+        if (r.hostname) {
+          if (userBlock.has(r.hostname)) {
+            r.verdict = Verdict.DANGER
+            r.reason = 'user_blocked'
+            r.trusted = false
+          } else if (userAllow.has(r.hostname)) {
+            r.verdict = Verdict.SAFE
+            r.reason = 'user_allowed'
+            r.trusted = true
+          }
+        }
+
         return {
           verdict: r.verdict,
           trusted: !!r.trusted,
@@ -199,9 +288,32 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true // keep the channel open for the async response
 })
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   const current = await chrome.storage.local.get(SETTINGS_KEY)
-  if (!current[SETTINGS_KEY]) {
+  
+  if (details.reason === 'install' || !current[SETTINGS_KEY]) {
+    // Первый запуск
     await chrome.storage.local.set({ [SETTINGS_KEY]: defaultSettings })
+  } else if (details.reason === 'update') {
+    // Обновление версии расширения
+    let settings = current[SETTINGS_KEY]
+    let needsUpdate = false
+
+    // 1. Слияние: добавляем новые поля настроек, появившиеся в новой версии
+    for (const key in defaultSettings) {
+      if (!(key in settings)) {
+        settings[key] = defaultSettings[key]
+        needsUpdate = true
+      }
+    }
+
+    // 2. Место для будущих миграций данных (если изменится структура)
+    // if (details.previousVersion === '1.0.0') {
+    //   ...
+    // }
+
+    if (needsUpdate) {
+      await chrome.storage.local.set({ [SETTINGS_KEY]: settings })
+    }
   }
 })

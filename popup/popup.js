@@ -136,6 +136,32 @@ async function init() {
     await send({ type: 'setSettings', settings: { badges: badges.checked } })
   })
 
+  // Custom domain addition
+  const customDomainInput = $('custom-domain-input')
+  const customDomainBtn = $('custom-domain-btn')
+  const customDomainMsg = $('custom-domain-msg')
+
+  customDomainBtn.addEventListener('click', async () => {
+    let raw = customDomainInput.value.trim()
+    if (!raw) return
+    
+    let host = raw
+    if (host.startsWith('http://') || host.startsWith('https://')) {
+      try { host = new URL(host).hostname } catch {}
+    }
+    host = host.toLowerCase()
+
+    await send({ type: 'allowAlways', host })
+    
+    customDomainInput.value = ''
+    customDomainMsg.textContent = `Домен ${host} добавлен в белый список`
+    customDomainMsg.style.color = '#16a34a' // success green
+    setTimeout(() => { customDomainMsg.textContent = '' }, 3000)
+
+    // Re-analyze just in case we are on that domain right now
+    await analyzeActiveTab()
+  })
+
   await analyzeActiveTab()
 }
 

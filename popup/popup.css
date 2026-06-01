@@ -275,6 +275,50 @@ body[data-verdict='danger'] .hero-icon {
 .setting-text { font-size: 13px; font-weight: 600; display: flex; flex-direction: column; gap: 2px; }
 .setting-text small { font-size: 11px; font-weight: 400; color: var(--muted); }
 
+/* custom domain */
+.custom-domain {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.custom-domain-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.custom-domain-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.custom-domain-input:focus {
+  border-color: var(--accent);
+}
+.custom-domain-btn {
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.custom-domain-btn:hover {
+  background: var(--border);
+}
+.custom-domain-msg {
+  margin-top: 6px;
+  font-size: 11px;
+  min-height: 14px;
+}
+
 /* toggle switch */
 .switch { position: relative; flex: 0 0 auto; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }

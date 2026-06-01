@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Manifest V3 extension protecting against typosquatting and homograph phishing.",
   "scripts": {
-    "test": "node test/detector.test.js"
+    "test": "node test/detector.test.js && node test/background.test.js"
   },
   "dependencies": {
     "bloom-filter": "^0.2.0",

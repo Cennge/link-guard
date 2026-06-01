@@ -58,6 +58,12 @@ document.getElementById('back').addEventListener('click', () => {
   else location.href = 'about:blank'
 })
 
+if (reason === 'user_blocked') {
+  document.getElementById('proceed').hidden = true
+  document.getElementById('proceed-always').hidden = true
+}
+
+
 // "Proceed anyway": tell the worker to allow this host for the session, then go.
 document.getElementById('proceed').addEventListener('click', () => {
   const ok = confirm(
