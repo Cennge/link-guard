@@ -5,7 +5,9 @@ import fs from 'node:fs'
 const localStore = {}
 const sessionStore = {}
 let updatedTab = null
+let dnrRules = []
 const noopEvent = () => ({ addListener: () => {} })
+global.getDnrRules = () => dnrRules
 
 global.chrome = {
   storage: {
@@ -35,8 +37,11 @@ global.chrome = {
     setBadgeBackgroundColor: async () => {},
   },
   declarativeNetRequest: {
-    getDynamicRules: async () => [],
-    updateDynamicRules: async () => {},
+    getDynamicRules: async () => dnrRules,
+    updateDynamicRules: async ({ removeRuleIds = [], addRules = [] }) => {
+      if (removeRuleIds.length) dnrRules = dnrRules.filter((r) => !removeRuleIds.includes(r.id))
+      dnrRules = dnrRules.concat(addRules)
+    },
   },
   alarms: {
     create: () => {},
@@ -183,6 +188,22 @@ async function runTests() {
   })
   assertEqual(res.verdict, 'warning', 'Кросс-доменная отправка пароля -> warning')
   assertEqual(res.reason, 'cross_origin_credentials', 'Причина должна быть cross_origin_credentials')
+
+  // 15. Hard DNR block installs a main_frame rule for a blocked host
+  await sendMessage({ type: 'blockAlways', host: 'evil-dnr.test' })
+  let rules = global.getDnrRules()
+  const hasMainFrameBlock = rules.some((r) =>
+    r.condition.urlFilter.includes('evil-dnr.test') &&
+    r.condition.resourceTypes.includes('main_frame') &&
+    r.action.type === 'block')
+  assertEqual(hasMainFrameBlock, true, 'blockAlways ставит жёсткое DNR-правило с main_frame')
+
+  // 16. "Proceed anyway" (allow) removes the hard-block rule for that host
+  await sendMessage({ type: 'allow', host: 'evil-dnr.test' })
+  rules = global.getDnrRules()
+  const stillBlocked = rules.some((r) => r.condition.urlFilter.includes('evil-dnr.test'))
+  assertEqual(stillBlocked, false, 'allow убирает DNR-блок (можно перейти)')
+  await sendMessage({ type: 'removeUserRule', host: 'evil-dnr.test' })
 
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })

@@ -128,18 +128,29 @@ async function classify(url) {
   return r
 }
 
-// Hard, all-frame, all-resource blocking for KNOWN-bad hosts (user block list +
-// phishing blocklist) via declarativeNetRequest. Main-frame is excluded so the
-// nice interstitial (handled in onNavigate) wins for top-level navigations,
-// while iframes / sub-resources get blocked outright.
+// Hard, network-level blocking for KNOWN-bad hosts (user block list + phishing
+// blocklist) via declarativeNetRequest — including the MAIN FRAME, so the evil
+// host's page never loads (no race). The nice interstitial is still shown by the
+// onNavigate soft-redirect on top. Hosts the user explicitly allowed (this
+// session or permanently) are excluded so "proceed anyway" works.
 async function syncBlockRules() {
   if (!chrome.declarativeNetRequest) return
   try {
-    const hosts = new Set([...(await getPhishSet()), ...(await getUserBlock())])
+    const existing = await chrome.declarativeNetRequest.getDynamicRules()
+    const removeRuleIds = existing.map((r) => r.id)
+
+    const settings = await getSettings()
+    if (!settings.enabled) {
+      await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: [] })
+      return
+    }
+
+    const allowed = new Set([...(await getUserAllow()), ...(await getAllowlist())])
     const rules = []
     let id = 1
-    for (const h of hosts) {
-      if (id > 5000) break // DNR dynamic-rule budget guard
+    for (const h of new Set([...(await getPhishSet()), ...(await getUserBlock())])) {
+      if (allowed.has(h)) continue // respect "proceed anyway" / whitelist
+      if (id > 8000) break // DNR dynamic-rule budget guard
       rules.push({
         id: id++,
         priority: 1,
@@ -147,17 +158,13 @@ async function syncBlockRules() {
         condition: {
           urlFilter: `||${h}^`,
           resourceTypes: [
-            'sub_frame', 'script', 'xmlhttprequest', 'image',
+            'main_frame', 'sub_frame', 'script', 'xmlhttprequest', 'image',
             'stylesheet', 'font', 'media', 'websocket', 'other',
           ],
         },
       })
     }
-    const existing = await chrome.declarativeNetRequest.getDynamicRules()
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: existing.map((r) => r.id),
-      addRules: rules,
-    })
+    await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules })
   } catch {
     // DNR unavailable or rule limit hit — heuristic path still protects main-frame.
   }
@@ -301,12 +308,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   ;(async () => {
     if (msg.type === 'allow' && msg.host) {
       await addToAllowlist(msg.host)
+      await syncBlockRules() // drop any hard-block rule so the user can proceed
       await bumpStat('proceeded')
       sendResponse({ ok: true })
       return
     }
     if (msg.type === 'allowAlways' && msg.host) {
       await addToUserAllow(msg.host)
+      await syncBlockRules()
       await bumpStat('proceeded')
       sendResponse({ ok: true })
       return
@@ -398,6 +407,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           updateFeed()
         }
       }
+      // Master switch toggled → install or tear down the hard-block rules.
+      if (msg.settings && 'enabled' in msg.settings) await syncBlockRules()
       sendResponse({ ok: true })
       return
     }
