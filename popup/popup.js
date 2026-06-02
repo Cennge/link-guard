@@ -222,6 +222,7 @@ let allRules = [] // [{ host, type }]
 let rulesFilter = 'all' // all | allow | block
 let rulesQuery = ''
 let currentFiltered = [] // rules matching the active filter+search (full, uncapped)
+let lastDeleted = [] // [{ host, type }] from the most recent delete, for undo
 
 function openRules() {
   $('view-dash').hidden = true
@@ -301,9 +302,11 @@ function renderRulesList() {
     del.textContent = '✕'
     del.title = 'Удалить'
     del.addEventListener('click', async () => {
+      lastDeleted = [{ host, type }]
       await send({ type: 'removeUserRule', host })
       await loadRules()
       analyzeActiveTab()
+      showUndo(`Удалено: ${host}`)
     })
 
     li.append(tag, name, del)
@@ -326,6 +329,39 @@ function showRvMsg(text, isError) {
   el.style.color = isError ? '#dc2626' : '#16a34a'
   clearTimeout(_msgTimer)
   _msgTimer = setTimeout(() => { el.textContent = '' }, 3000)
+}
+
+// Toast with an "Отменить" action; the deletion can be undone for ~8s.
+function showUndo(text) {
+  const el = $('rv-msg')
+  el.textContent = ''
+  el.style.color = ''
+  const span = document.createElement('span')
+  span.className = 'rv-undo-text'
+  span.textContent = text
+  const btn = document.createElement('button')
+  btn.type = 'button'
+  btn.className = 'rv-undo'
+  btn.textContent = 'Отменить'
+  btn.addEventListener('click', undoDelete)
+  el.append(span, btn)
+  clearTimeout(_msgTimer)
+  _msgTimer = setTimeout(() => {
+    el.textContent = ''
+    lastDeleted = []
+  }, 8000)
+}
+
+async function undoDelete() {
+  if (!lastDeleted.length) return
+  const allow = lastDeleted.filter((r) => r.type === 'allow').map((r) => r.host)
+  const block = lastDeleted.filter((r) => r.type === 'block').map((r) => r.host)
+  lastDeleted = []
+  clearTimeout(_msgTimer)
+  await send({ type: 'importUserRules', allow, block })
+  await loadRules()
+  analyzeActiveTab()
+  showRvMsg('Восстановлено')
 }
 
 async function addRuleFromInput() {
@@ -352,10 +388,11 @@ async function clearFiltered() {
       : `Удалить выбранные правила (${hosts.length})? Действие необратимо.`
   )
   if (!ok) return
+  lastDeleted = currentFiltered.map((r) => ({ host: r.host, type: r.type }))
   await send({ type: 'removeUserRules', hosts })
   await loadRules()
   analyzeActiveTab()
-  showRvMsg(`Удалено: ${hosts.length}`)
+  showUndo(`Удалено: ${hosts.length}`)
 }
 
 function exportRules() {

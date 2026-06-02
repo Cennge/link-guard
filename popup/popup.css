@@ -466,7 +466,19 @@ body[data-verdict='danger'] .hero-icon {
   background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .rv-add-btn:hover { filter: brightness(1.05); }
-.rv-msg { font-size: 11px; min-height: 14px; margin-top: 5px; color: #16a34a; }
+.rv-msg { font-size: 11px; min-height: 14px; margin-top: 5px; color: #16a34a; display: flex; align-items: center; gap: 8px; }
+.rv-undo-text { color: var(--muted); }
+.rv-undo {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 800;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.rv-undo:hover { filter: brightness(0.9); }
 
 .rv-searchwrap { position: relative; margin-top: 4px; }
 .rv-search-ico { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; }
