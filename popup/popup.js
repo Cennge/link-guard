@@ -42,6 +42,17 @@ function reasonText(reason, brand) {
 function $(id) { return document.getElementById(id) }
 function send(msg) { return new Promise((resolve) => chrome.runtime.sendMessage(msg, resolve)) }
 
+// --- Splash / preloader ---
+const splashStart = Date.now()
+function hideSplash() {
+  const s = $('splash')
+  if (!s || s.classList.contains('hide')) return
+  s.classList.add('hide')
+  setTimeout(() => s.remove(), 450)
+}
+// Safety net: never leave the splash up if init hangs.
+setTimeout(hideSplash, 2500)
+
 // ---- Protection level gauge -------------------------------------------------
 // Each active layer contributes points; turning one off lowers the score.
 function computeScore(s) {
@@ -231,6 +242,10 @@ async function init() {
 
   await analyzeActiveTab()
   await loadRules()
+
+  // Hold the splash for a graceful minimum, then fade it out.
+  const elapsed = Date.now() - splashStart
+  setTimeout(hideSplash, Math.max(0, 450 - elapsed))
 }
 
 // ============ Rules manager ============
