@@ -205,6 +205,29 @@ async function runTests() {
   assertEqual(stillBlocked, false, 'allow убирает DNR-блок (можно перейти)')
   await sendMessage({ type: 'removeUserRule', host: 'evil-dnr.test' })
 
+  // 17. On-page: brand given away by a hot-linked favicon (no brand text)
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://acc-secure-xyz.tld/', hasPassword: true,
+    identity: 'Login', iconHost: 'paypal.com',
+  })
+  assertEqual(res.verdict, 'danger', 'Favicon бренда на чужом домене -> danger')
+  assertEqual(res.reason, 'fake_login', 'Причина favicon-имперсонации -> fake_login')
+
+  // 18. On-page: alarmist wording on an obscure domain -> warning
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://obscure-portal-xyz.tld/', hasPassword: true,
+    identity: 'Account suspended — verify now',
+  })
+  assertEqual(res.verdict, 'warning', 'Тревожные формулировки на редком домене -> warning')
+  assertEqual(res.reason, 'suspicious_login', 'Причина -> suspicious_login')
+
+  // 19. ...but the same wording on a top-1M domain is suppressed
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://wikipedia.org/', hasPassword: true,
+    identity: 'Account suspended — verify now',
+  })
+  assertEqual(res.verdict, 'safe', 'Те же слова на популярном домене подавляются -> safe')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })

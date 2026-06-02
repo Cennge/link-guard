@@ -69,6 +69,24 @@ function getIdentityText() {
   return parts.join(' ').slice(0, 300)
 }
 
+// Host of a favicon served from a DIFFERENT domain than the page — phishing
+// pages often hot-link the real brand's favicon. Same-host icons are ignored.
+function getFaviconHost() {
+  for (const l of document.querySelectorAll('link[rel~="icon" i], link[rel="apple-touch-icon" i]')) {
+    const href = l.getAttribute('href')
+    if (!href) continue
+    try {
+      const u = new URL(href, location.href)
+      if ((u.protocol === 'http:' || u.protocol === 'https:') && u.hostname && u.hostname !== location.hostname) {
+        return u.hostname
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return ''
+}
+
 // True if any password form submits to a different registrable site.
 function crossOriginPasswordForm() {
   for (const form of document.querySelectorAll('form')) {
@@ -92,6 +110,8 @@ const PAGE_MSG = {
     `Эта страница выдаёт себя за <b>${b || 'известный сервис'}</b>, но домен ему не принадлежит. Не вводите логин и пароль — это похоже на фишинг.`,
   cross_origin_credentials:
     'Форма входа на этой странице отправляет пароль на сторонний сайт. Это типичный приём кражи учётных данных.',
+  suspicious_login:
+    'Похоже на поддельную страницу входа: тревожные формулировки («подтвердите», «аккаунт заблокирован») на малоизвестном домене. Не вводите данные, пока не убедитесь в адресе.',
 }
 
 function showPhishBanner(resp) {
@@ -124,6 +144,7 @@ async function pageGuard() {
     hasPassword: true,
     identity: getIdentityText(),
     crossOriginPost: crossOriginPasswordForm(),
+    iconHost: getFaviconHost(),
   })
   if (resp && (resp.verdict === 'danger' || resp.verdict === 'warning')) showPhishBanner(resp)
 }

@@ -22,7 +22,15 @@ export const Reason = {
   DECEPTIVE_URL: 'deceptive_url', // userinfo trick, etc.
   FAKE_LOGIN: 'fake_login', // page impersonates a brand's login on a foreign domain
   CROSS_ORIGIN_CREDENTIALS: 'cross_origin_credentials', // password form posts off-origin
+  SUSPICIOUS_LOGIN: 'suspicious_login', // alarmist login page on an obscure domain
 }
+
+// Alarmist words that legitimate login pages almost never put in their title —
+// classic "your account is suspended, verify now" phishing pressure.
+const STRONG_KEYWORDS = [
+  'verify', 'confirm', 'suspend', 'unlock', 'reactivat', 'validat', 'locked',
+  'unusual', 'reconfirm', 're-enter', 'limited', 'restricted', 'verification required',
+]
 
 // Words that scream "credential page" when they show up in a hostname. Used
 // only to *raise* suspicion on already-odd hosts — never on their own.
@@ -257,12 +265,46 @@ export function analyzePageSignals(url, signals = {}) {
     }
   }
 
+  // The brand identity is given away by a hot-linked favicon served straight
+  // from the brand's own domain (a common copy-paste phishing tell), even when
+  // no brand name appears in the text.
+  if (signals.iconHost) {
+    const ireg = parseHost(String(signals.iconHost).toLowerCase()).registrable
+    for (const brand of BRANDS) {
+      const fromBrand = brand.domains.includes(ireg) || brand.domains.includes(String(signals.iconHost).toLowerCase())
+      const isOwn = brand.domains.includes(base.registrable) || brand.domains.includes(base.hostname)
+      if (fromBrand && !isOwn) {
+        return {
+          verdict: Verdict.DANGER,
+          reason: Reason.FAKE_LOGIN,
+          brand: brand.display,
+          hostname: base.hostname,
+          registrable: base.registrable,
+          suggestion: brand.domains[0],
+        }
+      }
+    }
+  }
+
   // A password form that submits to a different site is a classic exfiltration
   // pattern.
   if (signals.crossOriginPost) {
     return {
       verdict: Verdict.WARNING,
       reason: Reason.CROSS_ORIGIN_CREDENTIALS,
+      hostname: base.hostname,
+      registrable: base.registrable,
+    }
+  }
+
+  // Alarmist wording on a credential page. On its own this is weak, so the
+  // caller's top-1M suppression downgrades it for popular/real domains — what
+  // survives is "scary login page on an obscure domain".
+  const idLower = String(signals.identity || '').toLowerCase()
+  if (STRONG_KEYWORDS.some((k) => idLower.includes(k))) {
+    return {
+      verdict: Verdict.WARNING,
+      reason: Reason.SUSPICIOUS_LOGIN,
       hostname: base.hostname,
       registrable: base.registrable,
     }
