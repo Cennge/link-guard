@@ -24,6 +24,32 @@ export const Reason = {
   CROSS_ORIGIN_CREDENTIALS: 'cross_origin_credentials', // password form posts off-origin
   SUSPICIOUS_LOGIN: 'suspicious_login', // alarmist login page on an obscure domain
   PAYMENT_SKIM: 'payment_skim', // card data submitted to another site
+  RISKY_DOMAIN: 'risky_domain', // throwaway-looking domain asking for sensitive data
+}
+
+// TLDs that are cheap/free and disproportionately abused for phishing.
+const RISKY_TLDS = new Set([
+  'tk', 'ml', 'ga', 'cf', 'gq', 'top', 'xyz', 'icu', 'cyou', 'sbs', 'rest',
+  'quest', 'click', 'link', 'live', 'buzz', 'work', 'fit', 'beauty', 'monster',
+  'lol', 'cfd', 'bond', 'makeup', 'hair', 'skin', 'autos', 'boats', 'mom',
+  'shop', 'store', 'online', 'site', 'website', 'space', 'fun', 'pw', 'su',
+  'gdn', 'review', 'country', 'kim', 'men', 'date', 'racing', 'win', 'stream',
+])
+
+// Heuristic: does the host itself look like a throwaway/young phishing domain?
+function looksThrowaway(hostname, registrable, suffix) {
+  const tld = suffix.split('.').pop()
+  const core = registrable.slice(0, Math.max(0, registrable.length - suffix.length - 1)) || registrable
+  const digits = (core.match(/\d/g) || []).length
+  const hyphens = (registrable.match(/-/g) || []).length
+  return (
+    RISKY_TLDS.has(tld) ||
+    core.length >= 20 ||
+    digits >= 4 ||
+    hyphens >= 3 ||
+    hostname.includes('xn--') ||
+    hostname.split('.').length >= 5
+  )
 }
 
 // Alarmist words that legitimate login pages almost never put in their title —
@@ -308,6 +334,20 @@ export function analyzePageSignals(url, signals = {}) {
     return {
       verdict: Verdict.WARNING,
       reason: Reason.SUSPICIOUS_LOGIN,
+      hostname: base.hostname,
+      registrable: base.registrable,
+    }
+  }
+
+  // Throwaway-looking domain (cheap TLD / random / punycode / many hyphens)
+  // asking for a password or card. The caller's top-1M suppression keeps this
+  // off popular/real sites, so what survives is "young/rare domain wants
+  // sensitive data".
+  const { suffix } = parseHost(base.hostname)
+  if (looksThrowaway(base.hostname, base.registrable, suffix)) {
+    return {
+      verdict: Verdict.WARNING,
+      reason: Reason.RISKY_DOMAIN,
       hostname: base.hostname,
       registrable: base.registrable,
     }

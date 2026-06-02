@@ -259,6 +259,15 @@ async function runTests() {
   })
   assertEqual(res.verdict, 'safe', 'Обычная форма оплаты без признаков фишинга -> safe')
 
+  // 24. Throwaway-looking domain + sensitive form -> warning
+  res = await sendMessage({ type: 'analyzePage', url: 'https://login-portal.xyz/', hasPassword: true })
+  assertEqual(res.verdict, 'warning', 'Дешёвый TLD + форма входа -> warning')
+  assertEqual(res.reason, 'risky_domain', 'Причина -> risky_domain')
+
+  // 25. Ordinary .com with a login is not flagged
+  res = await sendMessage({ type: 'analyzePage', url: 'https://mylocalshop.com/', hasPassword: true })
+  assertEqual(res.verdict, 'safe', 'Обычный .com с формой входа -> safe')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })
