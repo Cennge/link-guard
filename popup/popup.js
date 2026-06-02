@@ -245,7 +245,7 @@ async function init() {
 
   // Hold the splash for a graceful minimum, then fade it out.
   const elapsed = Date.now() - splashStart
-  setTimeout(hideSplash, Math.max(0, 450 - elapsed))
+  setTimeout(hideSplash, Math.max(0, 1400 - elapsed))
 }
 
 // ============ Rules manager ============
