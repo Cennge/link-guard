@@ -206,6 +206,97 @@ export const BRANDS = [
   { label: 'pinterest', display: 'Pinterest', domains: ['pinterest.com'] },
   { label: 'signal', display: 'Signal', domains: ['signal.org'] },
   { label: 'odnoklassniki', display: 'Одноклассники', domains: ['ok.ru'] },
+
+  // ============ СНГ ============
+  // --- Банки РФ ---
+  { label: 'raiffeisen', display: 'Райффайзенбанк', domains: ['raiffeisen.ru'] },
+  { label: 'gazprombank', display: 'Газпромбанк', domains: ['gazprombank.ru'] },
+  { label: 'rshb', display: 'Россельхозбанк', domains: ['rshb.ru'] },
+  { label: 'sovcombank', display: 'Совкомбанк', domains: ['sovcombank.ru'] },
+  { label: 'rosbank', display: 'Росбанк', domains: ['rosbank.ru'] },
+  { label: 'psbank', display: 'ПСБ', domains: ['psbank.ru'] },
+  { label: 'pochtabank', display: 'Почта Банк', domains: ['pochtabank.ru'] },
+  { label: 'mkb', display: 'МКБ', domains: ['mkb.ru'] },
+  // --- Банки Украины / Казахстана / Беларуси ---
+  { label: 'privatbank', display: 'ПриватБанк', domains: ['privatbank.ua'] },
+  { label: 'monobank', display: 'monobank', domains: ['monobank.ua'] },
+  { label: 'oschadbank', display: 'Ощадбанк', domains: ['oschadbank.ua'] },
+  { label: 'kaspi', display: 'Kaspi.kz', domains: ['kaspi.kz'] },
+  { label: 'halyk', display: 'Halyk Bank', domains: ['halykbank.kz'] },
+  { label: 'belarusbank', display: 'Беларусбанк', domains: ['belarusbank.by'] },
+  // --- Сервисы СНГ ---
+  { label: 'rostelecom', display: 'Ростелеком', domains: ['rt.ru','rostelecom.ru'] },
+  { label: 'tele2', display: 'Tele2', domains: ['tele2.ru'] },
+  { label: 'kinopoisk', display: 'Кинопоиск', domains: ['kinopoisk.ru'] },
+  { label: 'rutube', display: 'RUTUBE', domains: ['rutube.ru'] },
+  { label: 'okko', display: 'Okko', domains: ['okko.tv'] },
+  { label: 'cian', display: 'Циан', domains: ['cian.ru'] },
+  { label: 'mvideo', display: 'М.Видео', domains: ['mvideo.ru'] },
+  { label: 'lamoda', display: 'Lamoda', domains: ['lamoda.ru'] },
+  { label: 'magnit', display: 'Магнит', domains: ['magnit.ru'] },
+  { label: 'nalog', display: 'ФНС (nalog.ru)', domains: ['nalog.ru','nalog.gov.ru'] },
+
+  // ============ Европа ============
+  // --- Банки ---
+  { label: 'commerzbank', display: 'Commerzbank', domains: ['commerzbank.de'] },
+  { label: 'sparkasse', display: 'Sparkasse', domains: ['sparkasse.de'] },
+  { label: 'bnpparibas', display: 'BNP Paribas', domains: ['bnpparibas.com','mabanque.bnpparibas'] },
+  { label: 'societegenerale', display: 'Société Générale', domains: ['societegenerale.fr'] },
+  { label: 'caixabank', display: 'CaixaBank', domains: ['caixabank.es'] },
+  { label: 'intesa', display: 'Intesa Sanpaolo', domains: ['intesasanpaolo.com'] },
+  { label: 'rabobank', display: 'Rabobank', domains: ['rabobank.nl'] },
+  { label: 'abnamro', display: 'ABN AMRO', domains: ['abnamro.nl'] },
+  { label: 'nordea', display: 'Nordea', domains: ['nordea.com'] },
+  { label: 'danskebank', display: 'Danske Bank', domains: ['danskebank.com','danskebank.dk'] },
+  { label: 'swedbank', display: 'Swedbank', domains: ['swedbank.se'] },
+  { label: 'bunq', display: 'bunq', domains: ['bunq.com'] },
+  // --- Телеком / ритейл / авиа ---
+  { label: 'telekom', display: 'Deutsche Telekom', domains: ['telekom.de','telekom.com'] },
+  { label: 'telefonica', display: 'Telefónica / Movistar', domains: ['telefonica.com','movistar.es'] },
+  { label: 'zalando', display: 'Zalando', domains: ['zalando.com','zalando.de'] },
+  { label: 'allegro', display: 'Allegro', domains: ['allegro.pl'] },
+  { label: 'carrefour', display: 'Carrefour', domains: ['carrefour.fr','carrefour.com'] },
+  { label: 'mediamarkt', display: 'MediaMarkt', domains: ['mediamarkt.de'] },
+  { label: 'lufthansa', display: 'Lufthansa', domains: ['lufthansa.com'] },
+  { label: 'ryanair', display: 'Ryanair', domains: ['ryanair.com'] },
+  { label: 'airfrance', display: 'Air France', domains: ['airfrance.fr','airfrance.com'] },
+  { label: 'britishairways', display: 'British Airways', domains: ['britishairways.com'] },
+  { label: 'postnl', display: 'PostNL', domains: ['postnl.nl'] },
+  { label: 'laposte', display: 'La Poste', domains: ['laposte.fr','laposte.net'] },
+  { label: 'deutschepost', display: 'Deutsche Post', domains: ['deutschepost.de'] },
+
+  // ============ Америка ============
+  // --- Банки / финтех ---
+  { label: 'truist', display: 'Truist', domains: ['truist.com'] },
+  { label: 'usaa', display: 'USAA', domains: ['usaa.com'] },
+  { label: 'ally', display: 'Ally Bank', domains: ['ally.com'] },
+  { label: 'discover', display: 'Discover', domains: ['discover.com'] },
+  { label: 'schwab', display: 'Charles Schwab', domains: ['schwab.com'] },
+  { label: 'fidelity', display: 'Fidelity', domains: ['fidelity.com'] },
+  { label: 'vanguard', display: 'Vanguard', domains: ['vanguard.com'] },
+  // --- Ритейл ---
+  { label: 'target', display: 'Target', domains: ['target.com'] },
+  { label: 'bestbuy', display: 'Best Buy', domains: ['bestbuy.com'] },
+  { label: 'costco', display: 'Costco', domains: ['costco.com'] },
+  { label: 'homedepot', display: 'The Home Depot', domains: ['homedepot.com'] },
+  { label: 'lowes', display: "Lowe's", domains: ['lowes.com'] },
+  { label: 'wayfair', display: 'Wayfair', domains: ['wayfair.com'] },
+  // --- Связь / доставка / еда ---
+  { label: 'xfinity', display: 'Xfinity (Comcast)', domains: ['xfinity.com','comcast.net'] },
+  { label: 'spectrum', display: 'Spectrum', domains: ['spectrum.net'] },
+  { label: 'doordash', display: 'DoorDash', domains: ['doordash.com'] },
+  { label: 'instacart', display: 'Instacart', domains: ['instacart.com'] },
+  { label: 'grubhub', display: 'Grubhub', domains: ['grubhub.com'] },
+  // --- Авиа ---
+  { label: 'delta', display: 'Delta Air Lines', domains: ['delta.com'] },
+  { label: 'united', display: 'United Airlines', domains: ['united.com'] },
+  { label: 'southwest', display: 'Southwest Airlines', domains: ['southwest.com'] },
+  // --- Гос / прочее ---
+  { label: 'ssa', display: 'SSA (Social Security)', domains: ['ssa.gov'] },
+  { label: 'godaddy', display: 'GoDaddy', domains: ['godaddy.com'] },
+  { label: 'namecheap', display: 'Namecheap', domains: ['namecheap.com'] },
+  { label: 'mailchimp', display: 'Mailchimp', domains: ['mailchimp.com'] },
+  { label: 'squarespace', display: 'Squarespace', domains: ['squarespace.com'] },
 ]
 
 // Flat set of every legitimate *brand* domain. Membership here means "this is a
@@ -227,7 +318,11 @@ for (const brand of BRANDS) {
 // dictionary-word-ish labels are excluded to avoid false positives.
 // Dictionary-ish labels are excluded so ordinary words in a domain don't trip
 // combosquatting (e.g. "orange", "signal", "gemini", "exodus").
-const COMBO_EXCLUDE = ['apple', 'chase', 'steam', 'kraken', 'orange', 'signal', 'gemini', 'exodus', 'phantom', 'booking', 'discord']
+const COMBO_EXCLUDE = [
+  'apple', 'chase', 'steam', 'kraken', 'orange', 'signal', 'gemini', 'exodus',
+  'phantom', 'booking', 'discord', 'target', 'discover', 'delta', 'united',
+  'southwest', 'spectrum', 'nalog', 'vanguard',
+]
 export const COMBO_LABELS = BRANDS
   .map((b) => b.label)
   .filter((l) => l.length >= 5 && !COMBO_EXCLUDE.includes(l))
