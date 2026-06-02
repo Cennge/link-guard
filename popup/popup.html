@@ -74,25 +74,18 @@
   <section class="protection">
     <div class="protection-cap">Уровень защиты</div>
     <div class="gauge-wrap">
-      <svg class="gauge" viewBox="0 0 200 112" aria-hidden="true">
-        <defs>
-          <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#dc2626"/>
-            <stop offset="50%" stop-color="#d97706"/>
-            <stop offset="100%" stop-color="#16a34a"/>
-          </linearGradient>
-        </defs>
-        <path class="gauge-track" d="M18 100 A82 82 0 0 1 182 100"/>
-        <g class="gauge-needle" id="gauge-needle">
-          <line x1="100" y1="100" x2="100" y2="34"/>
-        </g>
-        <circle class="gauge-hub" cx="100" cy="100" r="6.5"/>
+      <svg class="gauge" viewBox="0 0 200 118" aria-hidden="true">
+        <path class="gauge-track" d="M16 102 A84 84 0 0 1 184 102"/>
+        <path class="gauge-value" id="gauge-value" d="M16 102 A84 84 0 0 1 184 102"/>
       </svg>
       <div class="gauge-read">
-        <span class="gauge-num" id="gauge-num">100</span><span class="gauge-den">/100</span>
+        <span class="gauge-num" id="gauge-num">100</span>
+        <span class="gauge-den">/ 100</span>
       </div>
     </div>
-    <div class="gauge-label" id="gauge-label">Максимальная защита</div>
+    <div class="gauge-label" id="gauge-label">
+      <span class="gauge-dot"></span><span id="gauge-label-text">Максимальная защита</span>
+    </div>
   </section>
 
   <!-- Settings -->

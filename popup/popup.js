@@ -53,25 +53,35 @@ function computeScore(s) {
   if (s.badges !== false) score += 8 // on-page link badges / awareness
   return score
 }
-function gaugeColor(score) {
-  if (score <= 0) return '#94a3b8'
-  if (score < 50) return '#dc2626'
-  if (score < 80) return '#d97706'
-  return '#16a34a'
+// Zone palette: solid colour + soft tint + track + glow per protection band.
+const GAUGE_ZONES = [
+  { max: 0, color: '#94a3b8', soft: '#eef1f4', track: '#e6e9ee', glow: 'rgba(148,163,184,0.30)', label: 'Защита выключена' },
+  { max: 49, color: '#dc2626', soft: '#fdeaea', track: '#f3d7d7', glow: 'rgba(220,38,38,0.32)', label: 'Слабая защита' },
+  { max: 79, color: '#d97706', soft: '#fdf2e3', track: '#f1e1c4', glow: 'rgba(217,119,6,0.32)', label: 'Средняя защита' },
+  { max: 99, color: '#16a34a', soft: '#e8f6ee', track: '#d0ead9', glow: 'rgba(22,163,74,0.32)', label: 'Высокая защита' },
+  { max: 100, color: '#16a34a', soft: '#e8f6ee', track: '#d0ead9', glow: 'rgba(22,163,74,0.40)', label: 'Максимальная защита' },
+]
+function zoneFor(score) {
+  for (const z of GAUGE_ZONES) if (score <= z.max) return z
+  return GAUGE_ZONES[GAUGE_ZONES.length - 1]
 }
-function gaugeLabel(score) {
-  if (score <= 0) return 'Защита выключена'
-  if (score < 50) return 'Слабая защита'
-  if (score < 80) return 'Средняя защита'
-  if (score < 100) return 'Высокая защита'
-  return 'Максимальная защита'
-}
+let _gaugeLen = 0
 function setGauge(score) {
-  const angle = (score / 100) * 180 - 90 // -90° (0) … +90° (100)
-  $('gauge-needle').style.transform = `rotate(${angle}deg)`
+  const z = zoneFor(score)
+  const root = document.documentElement.style
+  root.setProperty('--gauge-color', z.color)
+  root.setProperty('--gauge-soft', z.soft)
+  root.setProperty('--gauge-track', z.track)
+  root.setProperty('--gauge-glow', z.glow)
+
+  const path = $('gauge-value')
+  if (path) {
+    if (!_gaugeLen) _gaugeLen = path.getTotalLength()
+    path.style.strokeDasharray = String(_gaugeLen)
+    path.style.strokeDashoffset = String(_gaugeLen * (1 - score / 100))
+  }
   $('gauge-num').textContent = score
-  $('gauge-label').textContent = gaugeLabel(score)
-  document.documentElement.style.setProperty('--gauge-color', gaugeColor(score))
+  $('gauge-label-text').textContent = z.label
 }
 
 function setVerdict(v) { document.body.dataset.verdict = v }
