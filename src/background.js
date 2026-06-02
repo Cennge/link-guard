@@ -21,6 +21,8 @@ const defaultSettings = {
   enabled: true,
   blockWarnings: true,
   badges: true,
+  // On-page credential-phishing guard (the warning banner).
+  pageGuard: true,
   // Known-phishing host feed. Defaults to abuse.ch URLhaus — free, no API key,
   // no registration. It only DOWNLOADS a public list (no browsing data leaves
   // the device). Set feedEnabled:false (or feedUrl:'') to go fully offline.
@@ -349,6 +351,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       return
     }
     if (msg.type === 'analyzePage' && msg.url) {
+      const settings = await getSettings()
+      if (settings.pageGuard === false) {
+        sendResponse({ verdict: Verdict.SAFE })
+        return
+      }
       const r = analyzePageSignals(msg.url, msg)
       if (r.verdict !== Verdict.SAFE && r.hostname) {
         // Don't second-guess the user's own allow-list or popular real sites.
@@ -382,9 +389,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       const current = await getSettings()
       const next = { ...current, ...msg.settings }
       await chrome.storage.local.set({ [SETTINGS_KEY]: next })
-      // If the feed URL was just (re)configured, refresh it immediately.
-      if (msg.settings && 'feedUrl' in msg.settings && next.feedUrl && next.feedUrl !== current.feedUrl) {
-        updateFeed()
+      // React to feed changes: refresh when (re)enabled, drop the list when off.
+      if (msg.settings && ('feedUrl' in msg.settings || 'feedEnabled' in msg.settings)) {
+        if (next.feedEnabled === false) {
+          await chrome.storage.local.set({ [PHISH_KEY]: [] })
+          await syncBlockRules()
+        } else {
+          updateFeed()
+        }
       }
       sendResponse({ ok: true })
       return

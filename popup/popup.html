@@ -70,6 +70,31 @@
     </div>
   </section>
 
+  <!-- Protection level gauge -->
+  <section class="protection">
+    <div class="protection-cap">Уровень защиты</div>
+    <div class="gauge-wrap">
+      <svg class="gauge" viewBox="0 0 200 112" aria-hidden="true">
+        <defs>
+          <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#dc2626"/>
+            <stop offset="50%" stop-color="#d97706"/>
+            <stop offset="100%" stop-color="#16a34a"/>
+          </linearGradient>
+        </defs>
+        <path class="gauge-track" d="M18 100 A82 82 0 0 1 182 100"/>
+        <g class="gauge-needle" id="gauge-needle">
+          <line x1="100" y1="100" x2="100" y2="34"/>
+        </g>
+        <circle class="gauge-hub" cx="100" cy="100" r="6.5"/>
+      </svg>
+      <div class="gauge-read">
+        <span class="gauge-num" id="gauge-num">100</span><span class="gauge-den">/100</span>
+      </div>
+    </div>
+    <div class="gauge-label" id="gauge-label">Максимальная защита</div>
+  </section>
+
   <!-- Settings -->
   <section class="settings">
     <label class="setting" for="blockWarnings">
@@ -89,6 +114,26 @@
       </span>
       <span class="switch">
         <input type="checkbox" id="badges" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </span>
+    </label>
+    <label class="setting" for="pageGuard">
+      <span class="setting-text">
+        Защита страниц входа
+        <small>предупреждение на поддельных формах ввода пароля</small>
+      </span>
+      <span class="switch">
+        <input type="checkbox" id="pageGuard" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </span>
+    </label>
+    <label class="setting" for="feedEnabled">
+      <span class="setting-text">
+        Живой список угроз
+        <small>база известного фишинга (URLhaus), обновляется локально</small>
+      </span>
+      <span class="switch">
+        <input type="checkbox" id="feedEnabled" checked>
         <span class="switch-track"><span class="switch-thumb"></span></span>
       </span>
     </label>

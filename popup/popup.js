@@ -42,6 +42,38 @@ function reasonText(reason, brand) {
 function $(id) { return document.getElementById(id) }
 function send(msg) { return new Promise((resolve) => chrome.runtime.sendMessage(msg, resolve)) }
 
+// ---- Protection level gauge -------------------------------------------------
+// Each active layer contributes points; turning one off lowers the score.
+function computeScore(s) {
+  if (!s.enabled) return 0
+  let score = 40 // core detection engine + hard-block rules
+  if (s.feedEnabled !== false) score += 20 // live known-phishing list
+  if (s.pageGuard !== false) score += 20 // on-page credential-phishing guard
+  if (s.blockWarnings !== false) score += 12 // actively block "suspicious"
+  if (s.badges !== false) score += 8 // on-page link badges / awareness
+  return score
+}
+function gaugeColor(score) {
+  if (score <= 0) return '#94a3b8'
+  if (score < 50) return '#dc2626'
+  if (score < 80) return '#d97706'
+  return '#16a34a'
+}
+function gaugeLabel(score) {
+  if (score <= 0) return 'Защита выключена'
+  if (score < 50) return 'Слабая защита'
+  if (score < 80) return 'Средняя защита'
+  if (score < 100) return 'Высокая защита'
+  return 'Максимальная защита'
+}
+function setGauge(score) {
+  const angle = (score / 100) * 180 - 90 // -90° (0) … +90° (100)
+  $('gauge-needle').style.transform = `rotate(${angle}deg)`
+  $('gauge-num').textContent = score
+  $('gauge-label').textContent = gaugeLabel(score)
+  document.documentElement.style.setProperty('--gauge-color', gaugeColor(score))
+}
+
 function setVerdict(v) { document.body.dataset.verdict = v }
 
 function renderHero(verdict, hostText) {
@@ -108,6 +140,10 @@ async function init() {
   $('stat-blocked').textContent = stats.blocked
   $('stat-proceeded').textContent = stats.proceeded
 
+  // Live copy of settings that drives the protection gauge.
+  const state = { ...settings }
+  const refreshGauge = () => setGauge(computeScore(state))
+
   // Power toggle (protection on/off).
   const power = $('power')
   const applyPower = (on) => {
@@ -119,22 +155,27 @@ async function init() {
   power.addEventListener('click', async () => {
     const on = document.body.dataset.enabled !== 'true'
     applyPower(on)
+    state.enabled = on
+    refreshGauge()
     await send({ type: 'setSettings', settings: { enabled: on } })
   })
 
-  // "Block warnings" switch.
-  const blockWarnings = $('blockWarnings')
-  blockWarnings.checked = settings.blockWarnings
-  blockWarnings.addEventListener('change', async () => {
-    await send({ type: 'setSettings', settings: { blockWarnings: blockWarnings.checked } })
-  })
+  // Toggle wiring helper: reflect into state, redraw gauge, persist.
+  const wire = (id, key) => {
+    const el = $(id)
+    el.checked = settings[key] !== false // defaults are all "on"
+    el.addEventListener('change', async () => {
+      state[key] = el.checked
+      refreshGauge()
+      await send({ type: 'setSettings', settings: { [key]: el.checked } })
+    })
+  }
+  wire('blockWarnings', 'blockWarnings')
+  wire('badges', 'badges')
+  wire('pageGuard', 'pageGuard')
+  wire('feedEnabled', 'feedEnabled')
 
-  // "Trust badges" switch.
-  const badges = $('badges')
-  badges.checked = settings.badges !== false
-  badges.addEventListener('change', async () => {
-    await send({ type: 'setSettings', settings: { badges: badges.checked } })
-  })
+  refreshGauge()
 
   // Custom domain addition
   const customDomainInput = $('custom-domain-input')
