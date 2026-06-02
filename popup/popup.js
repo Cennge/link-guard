@@ -378,14 +378,45 @@ async function addRuleFromInput() {
   analyzeActiveTab()
 }
 
+// Styled confirmation dialog → Promise<boolean>. Replaces window.confirm().
+function confirmModal(text, okLabel = 'Удалить') {
+  return new Promise((resolve) => {
+    const modal = $('modal')
+    $('modal-text').textContent = text
+    $('modal-ok').textContent = okLabel
+    modal.hidden = false
+    const done = (val) => {
+      modal.hidden = true
+      $('modal-ok').removeEventListener('click', onOk)
+      $('modal-cancel').removeEventListener('click', onCancel)
+      modal.removeEventListener('click', onBackdrop)
+      document.removeEventListener('keydown', onKey)
+      resolve(val)
+    }
+    const onOk = () => done(true)
+    const onCancel = () => done(false)
+    const onBackdrop = (e) => { if (e.target === modal) done(false) }
+    const onKey = (e) => {
+      if (e.key === 'Escape') done(false)
+      else if (e.key === 'Enter') done(true)
+    }
+    $('modal-ok').addEventListener('click', onOk)
+    $('modal-cancel').addEventListener('click', onCancel)
+    modal.addEventListener('click', onBackdrop)
+    document.addEventListener('keydown', onKey)
+    $('modal-ok').focus()
+  })
+}
+
 async function clearFiltered() {
   const hosts = currentFiltered.map((r) => r.host)
   if (!hosts.length) return
   const isAll = rulesFilter === 'all' && !rulesQuery
-  const ok = window.confirm(
+  const ok = await confirmModal(
     isAll
       ? `Удалить все ваши правила (${hosts.length})? Действие необратимо.`
-      : `Удалить выбранные правила (${hosts.length})? Действие необратимо.`
+      : `Удалить выбранные правила (${hosts.length})? Действие необратимо.`,
+    isAll ? 'Очистить всё' : 'Удалить'
   )
   if (!ok) return
   lastDeleted = currentFiltered.map((r) => ({ host: r.host, type: r.type }))

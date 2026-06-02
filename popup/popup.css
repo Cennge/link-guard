@@ -615,3 +615,44 @@ body[data-verdict='danger'] .hero-icon {
 
 /* ============ Disabled state dimming ============ */
 body[data-enabled='false'] .hero-status { color: var(--muted); }
+
+/* ============ Confirmation modal ============ */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(16, 24, 40, 0.45);
+}
+.modal[hidden] { display: none; }
+.modal-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 18px 18px 14px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  animation: modal-in 0.15s ease-out;
+}
+@keyframes modal-in {
+  from { transform: translateY(6px) scale(0.98); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.modal-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.modal-text { font-size: 13px; line-height: 1.45; color: #3a4250; margin-bottom: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.modal-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.modal-cancel { background: var(--bg); color: var(--text); }
+.modal-cancel:hover { background: var(--surface); }
+.modal-danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+.modal-danger:hover { filter: brightness(1.05); }
