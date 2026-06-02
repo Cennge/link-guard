@@ -82,7 +82,7 @@ svg { width: 100%; height: 100%; display: block; }
   letter-spacing: -0.01em;
 }
 
-.brand-logo { width: 20px; height: 20px; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; object-fit: contain; }
 .brand-logo path { fill: var(--accent); transition: fill 0.3s ease; }
 
 .power {
