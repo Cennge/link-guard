@@ -225,12 +225,14 @@ let currentFiltered = [] // rules matching the active filter+search (full, uncap
 let lastDeleted = [] // [{ host, type }] from the most recent delete, for undo
 
 function openRules() {
+  document.querySelector('.topbar').hidden = true
   $('view-dash').hidden = true
   $('view-rules').hidden = false
   $('rv-search').focus()
 }
 function closeRules() {
   $('view-rules').hidden = true
+  document.querySelector('.topbar').hidden = false
   $('view-dash').hidden = false
 }
 

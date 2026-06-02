@@ -72,6 +72,7 @@ svg { width: 100%; height: 100%; display: block; }
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
 }
+.topbar[hidden] { display: none; }
 
 .brand {
   display: flex;
@@ -418,10 +419,12 @@ body[data-verdict='danger'] .hero-icon {
 }
 
 /* ============ Rules manager view ============ */
+/* Full-height screen (the global top bar is hidden while it's open), so only
+   the list scrolls internally — never the whole popup. */
 .view-rules {
   display: flex;
   flex-direction: column;
-  height: 549px;
+  height: 598px;
   padding: 12px 14px 0;
 }
 .view-rules[hidden] { display: none; }
