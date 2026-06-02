@@ -23,6 +23,7 @@ export const Reason = {
   FAKE_LOGIN: 'fake_login', // page impersonates a brand's login on a foreign domain
   CROSS_ORIGIN_CREDENTIALS: 'cross_origin_credentials', // password form posts off-origin
   SUSPICIOUS_LOGIN: 'suspicious_login', // alarmist login page on an obscure domain
+  PAYMENT_SKIM: 'payment_skim', // card data submitted to another site
 }
 
 // Alarmist words that legitimate login pages almost never put in their title —
@@ -242,7 +243,8 @@ export function analyzePageSignals(url, signals = {}) {
   const base = analyze(url)
   const out = { verdict: Verdict.SAFE, hostname: base.hostname, registrable: base.registrable }
   if (!base.hostname || base.trusted) return out
-  if (!signals.hasPassword) return out
+  // Only credential or payment pages are interesting.
+  if (!signals.hasPassword && !signals.hasPayment) return out
 
   // The page presents a known brand's identity, but the domain isn't theirs.
   const skel = skeleton(String(signals.identity || '').toLowerCase())
@@ -286,12 +288,13 @@ export function analyzePageSignals(url, signals = {}) {
     }
   }
 
-  // A password form that submits to a different site is a classic exfiltration
-  // pattern.
+  // A sensitive form that submits to a different site is a classic exfiltration
+  // pattern. Card data going off-origin = skimming (DANGER); a password going
+  // off-origin is a softer WARNING.
   if (signals.crossOriginPost) {
     return {
-      verdict: Verdict.WARNING,
-      reason: Reason.CROSS_ORIGIN_CREDENTIALS,
+      verdict: signals.hasPayment ? Verdict.DANGER : Verdict.WARNING,
+      reason: signals.hasPayment ? Reason.PAYMENT_SKIM : Reason.CROSS_ORIGIN_CREDENTIALS,
       hostname: base.hostname,
       registrable: base.registrable,
     }

@@ -246,6 +246,19 @@ async function runTests() {
   assertEqual(res.allow.includes('bulk2.com'), true, 'массовое удаление не трогает остальные')
   await sendMessage({ type: 'removeUserRule', host: 'bulk2.com' })
 
+  // 22. Payment skim: card data posted to a different origin
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://checkout-xyz.tld/', hasPayment: true, crossOriginPost: true,
+  })
+  assertEqual(res.verdict, 'danger', 'Карта уходит на чужой домен -> danger')
+  assertEqual(res.reason, 'payment_skim', 'Причина -> payment_skim')
+
+  // 23. A plain card form (same-origin, no other signal) is NOT flagged
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://smallshop-xyz.tld/', hasPayment: true,
+  })
+  assertEqual(res.verdict, 'safe', 'Обычная форма оплаты без признаков фишинга -> safe')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })

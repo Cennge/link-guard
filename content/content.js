@@ -48,8 +48,28 @@ function send(msg) {
 // Looks at the LOADED page (not just the URL): a password field whose page
 // claims a brand identity it doesn't own, or that posts credentials off-origin.
 
-function hasPasswordField() {
-  return !!document.querySelector('input[type="password" i]')
+// Classify a single input as a password / card-number / CVV field.
+function fieldKind(el) {
+  if ((el.type || '').toLowerCase() === 'password') return 'password'
+  const ac = (el.getAttribute('autocomplete') || '').toLowerCase()
+  const hint = `${el.name || ''} ${el.id || ''} ${el.getAttribute('placeholder') || ''} ${ac}`.toLowerCase()
+  if (ac === 'cc-csc' || /\bcvv\b|\bcvc\b|\bcsc\b|cvv2|cvc2|security ?code|код ?карт/.test(hint)) return 'cvv'
+  if (ac === 'cc-number' || /card.?number|cardnum|ccnum|cc.?num|номер ?карт/.test(hint)) return 'ccnum'
+  return ''
+}
+
+// Scan the page once: does it ask for a password, and/or full card details?
+function sensitiveScan(root = document) {
+  let password = false
+  let ccnum = false
+  let cvv = false
+  for (const el of root.querySelectorAll('input')) {
+    const k = fieldKind(el)
+    if (k === 'password') password = true
+    else if (k === 'ccnum') ccnum = true
+    else if (k === 'cvv') cvv = true
+  }
+  return { password, payment: ccnum && cvv }
 }
 
 // The page's claimed identity — title, og:site_name, and short logo alt text.
@@ -87,10 +107,15 @@ function getFaviconHost() {
   return ''
 }
 
-// True if any password form submits to a different registrable site.
-function crossOriginPasswordForm() {
+// True if a form holding sensitive fields (password OR card data) submits to a
+// different origin — credential theft / card skimming.
+function crossOriginSensitiveForm() {
   for (const form of document.querySelectorAll('form')) {
-    if (!form.querySelector('input[type="password" i]')) continue
+    let sensitive = false
+    for (const el of form.querySelectorAll('input')) {
+      if (fieldKind(el)) { sensitive = true; break }
+    }
+    if (!sensitive) continue
     const action = form.getAttribute('action')
     if (!action) continue
     try {
@@ -112,6 +137,8 @@ const PAGE_MSG = {
     'Форма входа на этой странице отправляет пароль на сторонний сайт. Это типичный приём кражи учётных данных.',
   suspicious_login:
     'Похоже на поддельную страницу входа: тревожные формулировки («подтвердите», «аккаунт заблокирован») на малоизвестном домене. Не вводите данные, пока не убедитесь в адресе.',
+  payment_skim:
+    'Данные банковской карты с этой страницы отправляются на сторонний сайт — типичный скимминг/фишинг. Не вводите номер карты и CVV.',
 }
 
 function showPhishBanner(resp) {
@@ -137,13 +164,15 @@ function showPhishBanner(resp) {
 
 async function pageGuard() {
   if (pageBannerShown) return
-  if (!hasPasswordField()) return
+  const sens = sensitiveScan()
+  if (!sens.password && !sens.payment) return
   const resp = await send({
     type: 'analyzePage',
     url: location.href,
-    hasPassword: true,
+    hasPassword: sens.password,
+    hasPayment: sens.payment,
     identity: getIdentityText(),
-    crossOriginPost: crossOriginPasswordForm(),
+    crossOriginPost: crossOriginSensitiveForm(),
     iconHost: getFaviconHost(),
   })
   if (resp && (resp.verdict === 'danger' || resp.verdict === 'warning')) showPhishBanner(resp)
