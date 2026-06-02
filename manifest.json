@@ -11,6 +11,9 @@
     "declarativeNetRequest",
     "alarms"
   ],
+  "host_permissions": [
+    "https://urlhaus.abuse.ch/*"
+  ],
   "optional_host_permissions": [
     "https://*/*"
   ],

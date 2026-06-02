@@ -3,7 +3,7 @@
 // MV3 can't block synchronously without enterprise webRequestBlocking, so we
 // pre-empt the load with chrome.tabs.update — fast and reliable for top-level nav.
 
-import { analyze, Verdict } from './detector.js'
+import { analyze, analyzePageSignals, Verdict } from './detector.js'
 import { getTopDomains } from './bloom.js'
 
 const WARNING_PAGE = chrome.runtime.getURL('pages/warning.html')
@@ -21,9 +21,11 @@ const defaultSettings = {
   enabled: true,
   blockWarnings: true,
   badges: true,
-  // Optional URL of a known-phishing host feed (newline- or JSON-list). Empty =
-  // off (default), keeping the extension fully local unless the user opts in.
-  feedUrl: '',
+  // Known-phishing host feed. Defaults to abuse.ch URLhaus — free, no API key,
+  // no registration. It only DOWNLOADS a public list (no browsing data leaves
+  // the device). Set feedEnabled:false (or feedUrl:'') to go fully offline.
+  feedEnabled: true,
+  feedUrl: 'https://urlhaus.abuse.ch/downloads/hostfile/',
 }
 
 // --- Known-phishing blocklist (bundled file + user/feed extra) ---
@@ -162,7 +164,7 @@ async function syncBlockRules() {
 // Optional opt-in: refresh the phishing host list from settings.feedUrl.
 async function updateFeed() {
   const settings = await getSettings()
-  if (!settings.feedUrl) return
+  if (settings.feedEnabled === false || !settings.feedUrl) return
   try {
     const text = await (await fetch(settings.feedUrl)).text()
     let hosts
@@ -170,12 +172,18 @@ async function updateFeed() {
       const j = JSON.parse(text)
       hosts = Array.isArray(j) ? j : j.hosts || []
     } catch {
-      hosts = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+      // Plain list or /etc/hosts-style ("0.0.0.0 evil.tld"); drop comments and,
+      // for hosts-file lines, keep the last whitespace-separated token.
+      hosts = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l && !l.startsWith('#'))
+        .map((l) => (/\s/.test(l) ? l.split(/\s+/).pop() : l))
     }
     hosts = hosts
       .map((h) => String(h).toLowerCase().replace(/^https?:\/\//, '').split('/')[0].trim())
-      .filter(Boolean)
-      .slice(0, 100000)
+      .filter((h) => h && h.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(h) && h !== 'localhost')
+      .slice(0, 200000)
     await chrome.storage.local.set({ [PHISH_KEY]: hosts })
     await syncBlockRules()
   } catch {
@@ -338,6 +346,24 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         })
       )
       sendResponse({ badges: true, results })
+      return
+    }
+    if (msg.type === 'analyzePage' && msg.url) {
+      const r = analyzePageSignals(msg.url, msg)
+      if (r.verdict !== Verdict.SAFE && r.hostname) {
+        // Don't second-guess the user's own allow-list or popular real sites.
+        const userAllow = await getUserAllow()
+        if (userAllow.has(r.hostname)) {
+          sendResponse({ verdict: Verdict.SAFE })
+          return
+        }
+        const top = await getTopDomains()
+        if (top && (top.test(r.hostname) || (r.registrable && top.test(r.registrable)))) {
+          sendResponse({ verdict: Verdict.SAFE })
+          return
+        }
+      }
+      sendResponse(r)
       return
     }
     if (msg.type === 'updateFeed') {

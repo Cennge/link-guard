@@ -28,6 +28,7 @@ const TITLES = {
 
 let pageRegistrable = null
 let scanQueued = false
+let pageBannerShown = false
 
 function send(msg) {
   return new Promise((resolve) => {
@@ -41,6 +42,90 @@ function send(msg) {
       resolve(undefined)
     }
   })
+}
+
+// --- On-page credential-phishing guard ---------------------------------------
+// Looks at the LOADED page (not just the URL): a password field whose page
+// claims a brand identity it doesn't own, or that posts credentials off-origin.
+
+function hasPasswordField() {
+  return !!document.querySelector('input[type="password" i]')
+}
+
+// The page's claimed identity — title, og:site_name, and short logo alt text.
+function getIdentityText() {
+  const parts = []
+  if (document.title) parts.push(document.title)
+  const og = document.querySelector('meta[property="og:site_name"]')
+  if (og && og.content) parts.push(og.content)
+  let n = 0
+  for (const img of document.querySelectorAll('img[alt]')) {
+    const a = img.alt
+    if (a && a.length <= 40) {
+      parts.push(a)
+      if (++n >= 8) break
+    }
+  }
+  return parts.join(' ').slice(0, 300)
+}
+
+// True if any password form submits to a different registrable site.
+function crossOriginPasswordForm() {
+  for (const form of document.querySelectorAll('form')) {
+    if (!form.querySelector('input[type="password" i]')) continue
+    const action = form.getAttribute('action')
+    if (!action) continue
+    try {
+      const u = new URL(action, location.href)
+      if ((u.protocol === 'http:' || u.protocol === 'https:') && u.origin !== location.origin) {
+        return true
+      }
+    } catch {
+      // ignore malformed action
+    }
+  }
+  return false
+}
+
+const PAGE_MSG = {
+  fake_login: (b) =>
+    `Эта страница выдаёт себя за <b>${b || 'известный сервис'}</b>, но домен ему не принадлежит. Не вводите логин и пароль — это похоже на фишинг.`,
+  cross_origin_credentials:
+    'Форма входа на этой странице отправляет пароль на сторонний сайт. Это типичный приём кражи учётных данных.',
+}
+
+function showPhishBanner(resp) {
+  if (pageBannerShown || document.getElementById('lg-phish-banner')) return
+  pageBannerShown = true
+  const bar = document.createElement('div')
+  bar.id = 'lg-phish-banner'
+  bar.className = `lg-phish-banner lg-${resp.verdict}`
+  const entry = PAGE_MSG[resp.reason]
+  const msg =
+    typeof entry === 'function'
+      ? entry(resp.brand)
+      : entry || 'LinkGuard обнаружил признаки фишинговой страницы.'
+  bar.innerHTML =
+    `<span class="lg-phish-ico">${resp.verdict === 'danger' ? '⛔' : '⚠️'}</span>` +
+    `<span class="lg-phish-text"><b>LinkGuard:</b> ${msg}</span>` +
+    `<button class="lg-phish-x" type="button" aria-label="Скрыть">✕</button>`
+  bar.querySelector('.lg-phish-x').addEventListener('click', () => bar.remove())
+  const mount = () => (document.body || document.documentElement).appendChild(bar)
+  if (document.body) mount()
+  else document.addEventListener('DOMContentLoaded', mount, { once: true })
+}
+
+async function pageGuard() {
+  if (pageBannerShown) return
+  if (!hasPasswordField()) return
+  const resp = await send({
+    type: 'analyzePage',
+    url: location.href,
+    hasPassword: true,
+    identity: getIdentityText(),
+    crossOriginPost: crossOriginPasswordForm(),
+  })
+  if (resp && (resp.verdict === 'danger' || resp.verdict === 'warning')) showPhishBanner(resp)
 }
 
 function kindFor(result) {
@@ -129,6 +214,9 @@ function addBadge(anchor, kind) {
 
 async function scan() {
   scanQueued = false
+
+  // Page-level credential-phishing check runs independently of link badging.
+  pageGuard()
 
   const anchors = []
   const byHref = new Map() // href -> [anchors]

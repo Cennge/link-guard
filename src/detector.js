@@ -19,6 +19,9 @@ export const Reason = {
   COMBOSQUAT: 'combosquat',
   MIXED_SCRIPT: 'mixed_script',
   SUSPICIOUS_STRUCTURE: 'suspicious_structure',
+  DECEPTIVE_URL: 'deceptive_url', // userinfo trick, etc.
+  FAKE_LOGIN: 'fake_login', // page impersonates a brand's login on a foreign domain
+  CROSS_ORIGIN_CREDENTIALS: 'cross_origin_credentials', // password form posts off-origin
 }
 
 // Words that scream "credential page" when they show up in a hostname. Used
@@ -90,6 +93,17 @@ export function analyze(url) {
       verdict: Verdict.SAFE,
       trusted: true,
       brand: DOMAIN_TO_BRAND.get(asciiHost) || DOMAIN_TO_BRAND.get(registrable),
+      hostname: asciiHost,
+      registrable,
+    }
+  }
+
+  // 1b) Deceptive URL shape: userinfo that looks like a host hides the real
+  //     destination, e.g. https://paypal.com@evil.tld/.
+  if (parsed.username && parsed.username.includes('.')) {
+    return {
+      verdict: Verdict.WARNING,
+      reason: Reason.DECEPTIVE_URL,
       hostname: asciiHost,
       registrable,
     }
@@ -208,4 +222,50 @@ export function analyze(url) {
   }
 
   return { verdict: Verdict.SAFE, hostname: asciiHost, registrable }
+}
+
+// Page-level credential-phishing check, complementing the URL-only analyze().
+// The content script supplies cheap signals about the *loaded* page:
+//   { hasPassword, identity, crossOriginPost }
+// where `identity` is the page's claimed name (title / og:site_name / logo alt).
+// This catches phishing on otherwise-unremarkable domains, regardless of any
+// look-alike in the URL.
+export function analyzePageSignals(url, signals = {}) {
+  const base = analyze(url)
+  const out = { verdict: Verdict.SAFE, hostname: base.hostname, registrable: base.registrable }
+  if (!base.hostname || base.trusted) return out
+  if (!signals.hasPassword) return out
+
+  // The page presents a known brand's identity, but the domain isn't theirs.
+  const skel = skeleton(String(signals.identity || '').toLowerCase())
+  if (skel) {
+    for (const brand of BRANDS) {
+      if (brand.label.length < 4) continue
+      if (!skel.includes(brand.label)) continue
+      const isReal =
+        brand.domains.includes(base.registrable) || brand.domains.includes(base.hostname)
+      if (!isReal) {
+        return {
+          verdict: Verdict.DANGER,
+          reason: Reason.FAKE_LOGIN,
+          brand: brand.display,
+          hostname: base.hostname,
+          registrable: base.registrable,
+          suggestion: brand.domains[0],
+        }
+      }
+    }
+  }
+
+  // A password form that submits to a different site is a classic exfiltration
+  // pattern.
+  if (signals.crossOriginPost) {
+    return {
+      verdict: Verdict.WARNING,
+      reason: Reason.CROSS_ORIGIN_CREDENTIALS,
+      hostname: base.hostname,
+      registrable: base.registrable,
+    }
+  }
+  return out
 }

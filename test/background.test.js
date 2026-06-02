@@ -157,6 +157,33 @@ async function runTests() {
   assertEqual(res.verdict, 'warning', 'Бренд внутри лейбла + ключевое слово -> warning')
   assertEqual(res.reason, 'combosquat', 'Причина должна быть combosquat')
 
+  // 11. Deceptive userinfo URL (brand before @, real host after)
+  res = await sendMessage({ type: 'analyze', url: 'https://paypal.com@evil-host.tld/login' })
+  assertEqual(res.verdict, 'warning', 'URL с userinfo-обманом -> warning')
+  assertEqual(res.reason, 'deceptive_url', 'Причина должна быть deceptive_url')
+
+  // 12. On-page fake login: brand identity on a foreign domain
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://paypa1-clone.tld/', hasPassword: true,
+    identity: 'PayPal - Войдите в аккаунт',
+  })
+  assertEqual(res.verdict, 'danger', 'Поддельная страница входа бренда -> danger')
+  assertEqual(res.reason, 'fake_login', 'Причина должна быть fake_login')
+
+  // 13. On-page: real brand domain is NOT flagged
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://paypal.com/signin', hasPassword: true, identity: 'PayPal',
+  })
+  assertEqual(res.verdict, 'safe', 'Настоящий домен бренда -> safe')
+
+  // 14. On-page: password form posting cross-origin
+  res = await sendMessage({
+    type: 'analyzePage', url: 'https://my-shop-xyz.tld/', hasPassword: true,
+    identity: 'My Shop', crossOriginPost: true,
+  })
+  assertEqual(res.verdict, 'warning', 'Кросс-доменная отправка пароля -> warning')
+  assertEqual(res.reason, 'cross_origin_credentials', 'Причина должна быть cross_origin_credentials')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })
