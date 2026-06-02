@@ -443,6 +443,16 @@ body[data-verdict='danger'] .hero-icon {
 .rv-back svg { width: 18px; height: 18px; }
 .rv-back svg path { fill: none; stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .rv-title { flex: 1 1 auto; font-size: 15px; font-weight: 700; }
+.rv-iconbtn {
+  width: 30px; height: 30px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.rv-iconbtn:hover { background: var(--surface); border-color: #d4d9df; }
+.rv-iconbtn svg { width: 17px; height: 17px; }
+.rv-iconbtn svg path { fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .rv-add { display: flex; gap: 8px; margin-top: 12px; }
 .rv-add-input {

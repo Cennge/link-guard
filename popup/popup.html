@@ -133,7 +133,14 @@
         <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
       <span class="rv-title">Мои правила</span>
+      <button class="rv-iconbtn" id="rv-export" type="button" title="Экспорт списка в файл">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+      </button>
+      <button class="rv-iconbtn" id="rv-import" type="button" title="Импорт списка из файла">
+        <svg viewBox="0 0 24 24"><path d="M12 21V9m0 0l-4 4m4-4l4 4M5 3h14"/></svg>
+      </button>
       <span class="rules-count" id="rv-count">0</span>
+      <input type="file" id="rv-file" accept="application/json,.json" hidden>
     </div>
 
     <div class="rv-add">

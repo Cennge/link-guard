@@ -340,6 +340,23 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       })
       return
     }
+    if (msg.type === 'importUserRules') {
+      const norm = (arr) =>
+        (Array.isArray(arr) ? arr : [])
+          .map((h) => String(h).toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim())
+          .filter((h) => h && h.includes('.'))
+      const allow = await getUserAllow()
+      const block = await getUserBlock()
+      for (const h of norm(msg.allow)) if (allow.size < 50000) allow.add(h)
+      for (const h of norm(msg.block)) if (block.size < 50000) block.add(h)
+      await chrome.storage.local.set({
+        [USER_ALLOW_KEY]: [...allow],
+        [USER_BLOCK_KEY]: [...block],
+      })
+      await syncBlockRules()
+      sendResponse({ ok: true, allow: allow.size, block: block.size })
+      return
+    }
     if (msg.type === 'analyze' && msg.url) {
       sendResponse(await classify(msg.url))
       return

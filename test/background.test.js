@@ -228,6 +228,15 @@ async function runTests() {
   })
   assertEqual(res.verdict, 'safe', 'Те же слова на популярном домене подавляются -> safe')
 
+  // 20. Bulk import merges into the user lists
+  await sendMessage({ type: 'importUserRules', allow: ['imp-a.com', 'http://www.imp-b.com/x'], block: ['imp-bad.tld'] })
+  res = await sendMessage({ type: 'getUserRules' })
+  assertEqual(res.allow.includes('imp-a.com') && res.allow.includes('imp-b.com'), true, 'импорт нормализует и добавляет в белый список')
+  assertEqual(res.block.includes('imp-bad.tld'), true, 'импорт добавляет в чёрный список')
+  await sendMessage({ type: 'removeUserRule', host: 'imp-a.com' })
+  await sendMessage({ type: 'removeUserRule', host: 'imp-b.com' })
+  await sendMessage({ type: 'removeUserRule', host: 'imp-bad.tld' })
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })

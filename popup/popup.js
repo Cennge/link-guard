@@ -203,6 +203,13 @@ async function init() {
       renderRulesList()
     })
   }
+  $('rv-export').addEventListener('click', exportRules)
+  $('rv-import').addEventListener('click', () => $('rv-file').click())
+  $('rv-file').addEventListener('change', (e) => {
+    const file = e.target.files[0]
+    if (file) importRulesFile(file)
+    e.target.value = ''
+  })
 
   await analyzeActiveTab()
   await loadRules()
@@ -325,6 +332,43 @@ async function addRuleFromInput() {
   showRvMsg(`${host} добавлен в белый список`)
   await loadRules()
   analyzeActiveTab()
+}
+
+function exportRules() {
+  const data = {
+    app: 'LinkGuard',
+    version: 1,
+    allow: allRules.filter((r) => r.type === 'allow').map((r) => r.host),
+    block: allRules.filter((r) => r.type === 'block').map((r) => r.host),
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'linkguard-rules.json'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  showRvMsg('Список выгружен в файл')
+}
+
+async function importRulesFile(file) {
+  try {
+    const data = JSON.parse(await file.text())
+    const allow = Array.isArray(data) ? data : data.allow || []
+    const block = (data && data.block) || []
+    if (!allow.length && !block.length) {
+      showRvMsg('В файле нет доменов', true)
+      return
+    }
+    const res = await send({ type: 'importUserRules', allow, block })
+    await loadRules()
+    analyzeActiveTab()
+    showRvMsg(`Импортировано · белый: ${res.allow}, чёрный: ${res.block}`)
+  } catch {
+    showRvMsg('Не удалось прочитать файл (нужен JSON)', true)
+  }
 }
 
 init()
