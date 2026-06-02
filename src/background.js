@@ -23,15 +23,26 @@ const defaultSettings = {
   badges: true,
   // On-page credential-phishing guard (the warning banner).
   pageGuard: true,
-  // Known-phishing host feed. Defaults to abuse.ch URLhaus — free, no API key,
-  // no registration. It only DOWNLOADS a public list (no browsing data leaves
-  // the device). Set feedEnabled:false (or feedUrl:'') to go fully offline.
+  // Known-phishing host feeds — all free, no API key, no registration. They are
+  // DOWNLOADED and checked locally (no browsing data leaves the device). Set
+  // feedEnabled:false to go fully offline.
   feedEnabled: true,
-  feedUrl: 'https://urlhaus.abuse.ch/downloads/hostfile/',
+  // Small/fresh feeds first so they're always ingested; the large list fills
+  // the remaining budget (FEED_CAP).
+  feeds: [
+    'https://urlhaus.abuse.ch/downloads/hostfile/',
+    'https://openphish.com/feed.txt',
+    'https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt',
+  ],
+  // Optional extra custom feed URL (appended to the built-in ones).
+  feedUrl: '',
 }
+
+const FEED_CAP = 150000 // max feed hosts kept in storage
 
 // --- Known-phishing blocklist (bundled file + user/feed extra) ---
 let _bundledPhish = null
+let _phishSetCache = null // bundled ∪ feed hosts, cached in memory for speed
 async function getBundledPhish() {
   if (_bundledPhish) return _bundledPhish
   try {
@@ -43,9 +54,11 @@ async function getBundledPhish() {
   return _bundledPhish
 }
 async function getPhishSet() {
+  if (_phishSetCache) return _phishSetCache
   const set = new Set(await getBundledPhish())
   const { [PHISH_KEY]: extra } = await chrome.storage.local.get(PHISH_KEY)
   for (const h of extra || []) set.add(String(h).toLowerCase())
+  _phishSetCache = set
   return set
 }
 
@@ -170,34 +183,51 @@ async function syncBlockRules() {
   }
 }
 
-// Optional opt-in: refresh the phishing host list from settings.feedUrl.
+// Parse one feed body (JSON list, /etc/hosts file, plain domains, or URL list)
+// into normalised hostnames.
+function parseFeedText(text) {
+  let lines
+  try {
+    const j = JSON.parse(text)
+    lines = (Array.isArray(j) ? j : j.hosts || []).map(String)
+  } catch {
+    lines = text.split(/\r?\n/)
+  }
+  const out = []
+  for (let l of lines) {
+    l = l.trim()
+    if (!l || l.startsWith('#') || l.startsWith('!')) continue
+    if (/\s/.test(l)) l = l.split(/\s+/).pop() // "0.0.0.0 evil.tld" → evil.tld
+    l = l.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim()
+    if (l && l.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(l) && l !== 'localhost') out.push(l)
+  }
+  return out
+}
+
+// Refresh the phishing host list from the configured free feeds (downloaded and
+// checked locally). All feeds are merged; failures are skipped.
 async function updateFeed() {
   const settings = await getSettings()
-  if (settings.feedEnabled === false || !settings.feedUrl) return
-  try {
-    const text = await (await fetch(settings.feedUrl)).text()
-    let hosts
+  if (settings.feedEnabled === false) return
+  const urls = [...(settings.feeds || []), ...(settings.feedUrl ? [settings.feedUrl] : [])]
+  if (!urls.length) return
+
+  const set = new Set()
+  for (const url of urls) {
     try {
-      const j = JSON.parse(text)
-      hosts = Array.isArray(j) ? j : j.hosts || []
+      const text = await (await fetch(url)).text()
+      for (const h of parseFeedText(text)) {
+        if (set.size >= FEED_CAP) break
+        set.add(h)
+      }
     } catch {
-      // Plain list or /etc/hosts-style ("0.0.0.0 evil.tld"); drop comments and,
-      // for hosts-file lines, keep the last whitespace-separated token.
-      hosts = text
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith('#'))
-        .map((l) => (/\s/.test(l) ? l.split(/\s+/).pop() : l))
+      // this feed unreachable / no permission — skip it, keep the others
     }
-    hosts = hosts
-      .map((h) => String(h).toLowerCase().replace(/^https?:\/\//, '').split('/')[0].trim())
-      .filter((h) => h && h.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(h) && h !== 'localhost')
-      .slice(0, 200000)
-    await chrome.storage.local.set({ [PHISH_KEY]: hosts })
-    await syncBlockRules()
-  } catch {
-    // feed unreachable / no permission — keep the previous list.
   }
+  if (!set.size) return // total failure — keep the previous list
+  await chrome.storage.local.set({ [PHISH_KEY]: [...set] })
+  _phishSetCache = null
+  await syncBlockRules()
 }
 
 async function bumpStat(key) {
@@ -441,6 +471,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.settings && ('feedUrl' in msg.settings || 'feedEnabled' in msg.settings)) {
         if (next.feedEnabled === false) {
           await chrome.storage.local.set({ [PHISH_KEY]: [] })
+          _phishSetCache = null
           await syncBlockRules()
         } else {
           updateFeed()
@@ -454,6 +485,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     sendResponse({ ok: false })
   })()
   return true // keep the channel open for the async response
+})
+
+// Drop the in-memory phishing-set cache whenever the stored feed list changes.
+chrome.storage?.onChanged?.addListener((changes) => {
+  if (changes && changes[PHISH_KEY]) _phishSetCache = null
 })
 
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -496,7 +532,7 @@ chrome.runtime?.onStartup?.addListener(() => {
   updateFeed()
 })
 if (chrome.alarms) {
-  chrome.alarms.create('lg-feed', { periodInMinutes: 720 })
+  chrome.alarms.create('lg-feed', { periodInMinutes: 1440 })
   chrome.alarms.onAlarm?.addListener((a) => {
     if (a.name === 'lg-feed') updateFeed()
   })

@@ -7,12 +7,15 @@
   "permissions": [
     "webNavigation",
     "storage",
+    "unlimitedStorage",
     "activeTab",
     "declarativeNetRequest",
     "alarms"
   ],
   "host_permissions": [
-    "https://urlhaus.abuse.ch/*"
+    "https://urlhaus.abuse.ch/*",
+    "https://raw.githubusercontent.com/*",
+    "https://openphish.com/*"
   ],
   "optional_host_permissions": [
     "https://*/*"

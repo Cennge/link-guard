@@ -8,15 +8,22 @@ let updatedTab = null
 let dnrRules = []
 const noopEvent = () => ({ addListener: () => {} })
 global.getDnrRules = () => dnrRules
+global.mockStorageListeners = []
 
 global.chrome = {
   storage: {
+    onChanged: { addListener: (fn) => { global.mockStorageListeners.push(fn) } },
     local: {
       get: async (key) => {
         if (typeof key === 'string') return { [key]: localStore[key] }
         return localStore // fallback
       },
-      set: async (obj) => { Object.assign(localStore, obj) }
+      set: async (obj) => {
+        Object.assign(localStore, obj)
+        const changes = {}
+        for (const k of Object.keys(obj)) changes[k] = { newValue: obj[k] }
+        for (const fn of global.mockStorageListeners) fn(changes, 'local')
+      }
     },
     session: {
       get: async (key) => {
@@ -138,11 +145,11 @@ async function runTests() {
   assertEqual(batch.results[1].verdict, 'safe', 'Второй URL в батче (в userAllow) -> safe')
 
   // 6. Known-phishing blocklist (phishingExtra storage key)
-  localStore['phishingExtra'] = ['evil-blocklisted.com']
+  await global.chrome.storage.local.set({ phishingExtra: ['evil-blocklisted.com'] })
   res = await sendMessage({ type: 'analyze', url: 'https://evil-blocklisted.com/login' })
   assertEqual(res.verdict, 'danger', 'Хост из blocklist -> danger')
   assertEqual(res.reason, 'blocklist', 'Причина должна быть blocklist')
-  delete localStore['phishingExtra']
+  await global.chrome.storage.local.set({ phishingExtra: [] })
 
   // 7. False-positive suppression: a typo-looking host that IS in the top-1M
   res = await sendMessage({ type: 'analyze', url: 'https://googel.com' })
