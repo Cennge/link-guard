@@ -137,6 +137,75 @@ export const BRANDS = [
   // ---- Government / tax ----
   { label: 'irsgov', display: 'IRS', domains: ['irs.gov'] },
   { label: 'hmrc', display: 'HMRC / GOV.UK', domains: ['gov.uk','tax.service.gov.uk'] },
+
+  // ---- More tech / cloud / email ----
+  { label: 'cloudflare', display: 'Cloudflare', domains: ['cloudflare.com'] },
+  { label: 'oracle', display: 'Oracle', domains: ['oracle.com'] },
+  { label: 'salesforce', display: 'Salesforce', domains: ['salesforce.com'] },
+  { label: 'zoom', display: 'Zoom', domains: ['zoom.us','zoom.com'] },
+  { label: 'slack', display: 'Slack', domains: ['slack.com'] },
+  { label: 'notion', display: 'Notion', domains: ['notion.so','notion.com'] },
+  { label: 'figma', display: 'Figma', domains: ['figma.com'] },
+  { label: 'atlassian', display: 'Atlassian', domains: ['atlassian.com','atlassian.net'] },
+  { label: 'docusign', display: 'DocuSign', domains: ['docusign.com','docusign.net'] },
+  { label: 'wetransfer', display: 'WeTransfer', domains: ['wetransfer.com'] },
+  { label: 'mega', display: 'MEGA', domains: ['mega.nz','mega.io'] },
+  { label: 'protonvpn', display: 'Proton VPN', domains: ['protonvpn.com'] },
+  { label: 'aol', display: 'AOL', domains: ['aol.com'] },
+  { label: 'zoho', display: 'Zoho', domains: ['zoho.com','zoho.eu'] },
+
+  // ---- More streaming / media ----
+  { label: 'disney', display: 'Disney+', domains: ['disneyplus.com','disney.com'] },
+  { label: 'hbomax', display: 'Max (HBO)', domains: ['max.com','hbomax.com'] },
+  { label: 'primevideo', display: 'Prime Video', domains: ['primevideo.com'] },
+  { label: 'hulu', display: 'Hulu', domains: ['hulu.com'] },
+  { label: 'paramountplus', display: 'Paramount+', domains: ['paramountplus.com'] },
+
+  // ---- More crypto / trading ----
+  { label: 'bitfinex', display: 'Bitfinex', domains: ['bitfinex.com'] },
+  { label: 'bitstamp', display: 'Bitstamp', domains: ['bitstamp.net'] },
+  { label: 'gemini', display: 'Gemini', domains: ['gemini.com'] },
+  { label: 'etoro', display: 'eToro', domains: ['etoro.com'] },
+  { label: 'robinhood', display: 'Robinhood', domains: ['robinhood.com'] },
+  { label: 'uniswap', display: 'Uniswap', domains: ['uniswap.org'] },
+  { label: 'opensea', display: 'OpenSea', domains: ['opensea.io'] },
+  { label: 'exodus', display: 'Exodus', domains: ['exodus.com'] },
+
+  // ---- More banks (intl) ----
+  { label: 'tdbank', display: 'TD Bank', domains: ['td.com','tdbank.com'] },
+  { label: 'pncbank', display: 'PNC Bank', domains: ['pnc.com'] },
+  { label: 'scotiabank', display: 'Scotiabank', domains: ['scotiabank.com'] },
+  { label: 'commbank', display: 'CommBank', domains: ['commbank.com.au'] },
+  { label: 'monzo', display: 'Monzo', domains: ['monzo.com'] },
+  { label: 'n26', display: 'N26', domains: ['n26.com'] },
+  { label: 'ing', display: 'ING', domains: ['ing.com','ing.nl','ing.de'] },
+  { label: 'unicredit', display: 'UniCredit', domains: ['unicredit.it','unicreditgroup.eu'] },
+  { label: 'creditagricole', display: 'Crédit Agricole', domains: ['credit-agricole.fr'] },
+
+  // ---- Telecom (frequent SMS/phishing targets) ----
+  { label: 'verizon', display: 'Verizon', domains: ['verizon.com'] },
+  { label: 'attmobile', display: 'AT&T', domains: ['att.com'] },
+  { label: 'tmobile', display: 'T-Mobile', domains: ['t-mobile.com'] },
+  { label: 'vodafone', display: 'Vodafone', domains: ['vodafone.com'] },
+  { label: 'orange', display: 'Orange', domains: ['orange.com','orange.fr'] },
+  { label: 'mtsbank', display: 'МТС', domains: ['mts.ru'] },
+  { label: 'beeline', display: 'Билайн', domains: ['beeline.ru'] },
+  { label: 'megafon', display: 'МегаФон', domains: ['megafon.ru'] },
+
+  // ---- More shopping / delivery ----
+  { label: 'alibaba', display: 'Alibaba', domains: ['alibaba.com'] },
+  { label: 'temu', display: 'Temu', domains: ['temu.com'] },
+  { label: 'shein', display: 'SHEIN', domains: ['shein.com'] },
+  { label: 'asos', display: 'ASOS', domains: ['asos.com'] },
+  { label: 'ikea', display: 'IKEA', domains: ['ikea.com'] },
+  { label: 'dpdgroup', display: 'DPD', domains: ['dpdgroup.com'] },
+  { label: 'cdek', display: 'СДЭК', domains: ['cdek.ru'] },
+
+  // ---- More social / comms ----
+  { label: 'snapchat', display: 'Snapchat', domains: ['snapchat.com'] },
+  { label: 'pinterest', display: 'Pinterest', domains: ['pinterest.com'] },
+  { label: 'signal', display: 'Signal', domains: ['signal.org'] },
+  { label: 'odnoklassniki', display: 'Одноклассники', domains: ['ok.ru'] },
 ]
 
 // Flat set of every legitimate *brand* domain. Membership here means "this is a
@@ -156,9 +225,12 @@ for (const brand of BRANDS) {
 
 // Distinctive brand labels used for combosquatting detection. Short or
 // dictionary-word-ish labels are excluded to avoid false positives.
+// Dictionary-ish labels are excluded so ordinary words in a domain don't trip
+// combosquatting (e.g. "orange", "signal", "gemini", "exodus").
+const COMBO_EXCLUDE = ['apple', 'chase', 'steam', 'kraken', 'orange', 'signal', 'gemini', 'exodus', 'phantom', 'booking', 'discord']
 export const COMBO_LABELS = BRANDS
   .map((b) => b.label)
-  .filter((l) => l.length >= 5 && !['apple', 'chase', 'steam', 'kraken'].includes(l))
+  .filter((l) => l.length >= 5 && !COMBO_EXCLUDE.includes(l))
 
 // Helper to get brand info (label and display name) by its legit domain
 export function getBrandByDomain(domain) {
