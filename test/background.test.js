@@ -237,6 +237,15 @@ async function runTests() {
   await sendMessage({ type: 'removeUserRule', host: 'imp-b.com' })
   await sendMessage({ type: 'removeUserRule', host: 'imp-bad.tld' })
 
+  // 21. Bulk remove by host list
+  await sendMessage({ type: 'importUserRules', allow: ['bulk1.com', 'bulk2.com'], block: ['bulkbad.tld'] })
+  await sendMessage({ type: 'removeUserRules', hosts: ['bulk1.com', 'bulkbad.tld'] })
+  res = await sendMessage({ type: 'getUserRules' })
+  assertEqual(res.allow.includes('bulk1.com'), false, 'массовое удаление убрало bulk1.com')
+  assertEqual(res.block.includes('bulkbad.tld'), false, 'массовое удаление убрало хост из чёрного списка')
+  assertEqual(res.allow.includes('bulk2.com'), true, 'массовое удаление не трогает остальные')
+  await sendMessage({ type: 'removeUserRule', host: 'bulk2.com' })
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })

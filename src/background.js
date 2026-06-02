@@ -340,6 +340,21 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       })
       return
     }
+    if (msg.type === 'removeUserRules' && Array.isArray(msg.hosts)) {
+      const allow = await getUserAllow()
+      const block = await getUserBlock()
+      for (const h of msg.hosts) {
+        allow.delete(h)
+        block.delete(h)
+      }
+      await chrome.storage.local.set({
+        [USER_ALLOW_KEY]: [...allow],
+        [USER_BLOCK_KEY]: [...block],
+      })
+      await syncBlockRules()
+      sendResponse({ ok: true })
+      return
+    }
     if (msg.type === 'importUserRules') {
       const norm = (arr) =>
         (Array.isArray(arr) ? arr : [])

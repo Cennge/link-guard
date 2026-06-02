@@ -210,6 +210,7 @@ async function init() {
     if (file) importRulesFile(file)
     e.target.value = ''
   })
+  $('rv-clear').addEventListener('click', clearFiltered)
 
   await analyzeActiveTab()
   await loadRules()
@@ -220,6 +221,7 @@ const RENDER_CAP = 300
 let allRules = [] // [{ host, type }]
 let rulesFilter = 'all' // all | allow | block
 let rulesQuery = ''
+let currentFiltered = [] // rules matching the active filter+search (full, uncapped)
 
 function openRules() {
   $('view-dash').hidden = true
@@ -258,21 +260,24 @@ function plural(n, one, few, many) {
 
 function renderRulesList() {
   const list = $('rv-list')
-  const foot = $('rv-foot')
+  const footText = $('rv-foot-text')
+  const clearBtn = $('rv-clear')
   list.innerHTML = ''
 
-  const filtered = allRules.filter(
+  currentFiltered = allRules.filter(
     (r) =>
       (rulesFilter === 'all' || r.type === rulesFilter) &&
       (!rulesQuery || r.host.includes(rulesQuery))
   )
+  const filtered = currentFiltered
 
   if (!filtered.length) {
     const li = document.createElement('li')
     li.className = 'rules-empty'
     li.textContent = allRules.length ? 'Ничего не найдено' : 'Вы пока не добавляли свои домены'
     list.appendChild(li)
-    foot.textContent = ''
+    footText.textContent = ''
+    clearBtn.hidden = true
     return
   }
 
@@ -305,10 +310,13 @@ function renderRulesList() {
     list.appendChild(li)
   }
 
-  foot.textContent =
+  footText.textContent =
     filtered.length > shown.length
       ? `Показано ${shown.length} из ${filtered.length} — уточните поиск`
       : `${filtered.length} ${plural(filtered.length, 'правило', 'правила', 'правил')}`
+  const isAll = rulesFilter === 'all' && !rulesQuery
+  clearBtn.hidden = false
+  clearBtn.textContent = isAll ? `Очистить всё (${filtered.length})` : `Удалить эти (${filtered.length})`
 }
 
 let _msgTimer = 0
@@ -332,6 +340,22 @@ async function addRuleFromInput() {
   showRvMsg(`${host} добавлен в белый список`)
   await loadRules()
   analyzeActiveTab()
+}
+
+async function clearFiltered() {
+  const hosts = currentFiltered.map((r) => r.host)
+  if (!hosts.length) return
+  const isAll = rulesFilter === 'all' && !rulesQuery
+  const ok = window.confirm(
+    isAll
+      ? `Удалить все ваши правила (${hosts.length})? Действие необратимо.`
+      : `Удалить выбранные правила (${hosts.length})? Действие необратимо.`
+  )
+  if (!ok) return
+  await send({ type: 'removeUserRules', hosts })
+  await loadRules()
+  analyzeActiveTab()
+  showRvMsg(`Удалено: ${hosts.length}`)
 }
 
 function exportRules() {
