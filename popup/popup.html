@@ -18,142 +18,144 @@
     </button>
   </header>
 
-  <main class="cols">
-    <!-- Left column: current site -->
-    <div class="col">
-      <section class="hero card" id="hero">
-        <div class="hero-glow"></div>
-        <div class="hero-icon" id="hero-icon"></div>
-        <div class="hero-status" id="hero-status">Проверяем…</div>
-        <div class="hero-host" id="hero-host">
-          <svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 0 0-8 0v2Z"/></svg>
-          <span id="hero-host-text">—</span>
-        </div>
-      </section>
-
-      <!-- Detail card: only when not safe -->
-      <section class="detail" id="detail" hidden>
-        <div class="detail-head">
-          <span class="detail-badge" id="detail-badge"></span>
-          <span class="detail-title" id="detail-title"></span>
-        </div>
-        <p class="detail-text" id="detail-text"></p>
-        <div class="compare" id="compare" hidden>
-          <div class="compare-row">
-            <span class="compare-label">Что вы видите</span>
-            <code class="compare-val bad" id="compare-shown"></code>
+  <!-- ============ Dashboard view ============ -->
+  <div id="view-dash">
+    <main class="cols">
+      <!-- Left column: current site -->
+      <div class="col">
+        <section class="hero card" id="hero">
+          <div class="hero-glow"></div>
+          <div class="hero-icon" id="hero-icon"></div>
+          <div class="hero-status" id="hero-status">Проверяем…</div>
+          <div class="hero-host" id="hero-host">
+            <svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 0 0-8 0v2Z"/></svg>
+            <span id="hero-host-text">—</span>
           </div>
-          <div class="compare-row">
-            <span class="compare-label">Реальные символы</span>
-            <code class="compare-val bad" id="compare-real"></code>
+        </section>
+
+        <section class="detail" id="detail" hidden>
+          <div class="detail-head">
+            <span class="detail-badge" id="detail-badge"></span>
+            <span class="detail-title" id="detail-title"></span>
           </div>
-        </div>
-        <a class="suggest" id="suggest" hidden>
-          <span class="suggest-label">Перейти на настоящий сайт</span>
-          <span class="suggest-host" id="suggest-host"></span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
-        </a>
-      </section>
-    </div>
-
-    <!-- Right column: protection level + stats -->
-    <div class="col">
-      <section class="protection">
-        <div class="protection-cap">Уровень защиты</div>
-        <div class="gauge-wrap">
-          <svg class="gauge" viewBox="0 0 200 118" aria-hidden="true">
-            <path class="gauge-track" d="M16 102 A84 84 0 0 1 184 102"/>
-            <path class="gauge-value" id="gauge-value" d="M16 102 A84 84 0 0 1 184 102"/>
-          </svg>
-          <div class="gauge-read">
-            <span class="gauge-num" id="gauge-num">100</span>
-            <span class="gauge-den">/ 100</span>
+          <p class="detail-text" id="detail-text"></p>
+          <div class="compare" id="compare" hidden>
+            <div class="compare-row">
+              <span class="compare-label">Что вы видите</span>
+              <code class="compare-val bad" id="compare-shown"></code>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">Реальные символы</span>
+              <code class="compare-val bad" id="compare-real"></code>
+            </div>
           </div>
-        </div>
-        <div class="gauge-label" id="gauge-label">
-          <span class="gauge-dot"></span><span id="gauge-label-text">Максимальная защита</span>
-        </div>
-      </section>
-
-      <section class="stats">
-        <div class="stat">
-          <div class="stat-num" id="stat-blocked">0</div>
-          <div class="stat-cap">заблокировано</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
-          <div class="stat-num" id="stat-proceeded">0</div>
-          <div class="stat-cap">пропущено вами</div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <!-- Settings -->
-  <section class="settings">
-    <div class="toggles">
-      <label class="setting" for="blockWarnings">
-        <span class="setting-text">
-          Блокировать подозрительные
-          <small>уровень «warning», не только явный фишинг</small>
-        </span>
-        <span class="switch">
-          <input type="checkbox" id="blockWarnings" checked>
-          <span class="switch-track"><span class="switch-thumb"></span></span>
-        </span>
-      </label>
-      <label class="setting" for="badges">
-        <span class="setting-text">
-          Значки доверия у ссылок
-          <small>зелёный щит у проверенных сайтов</small>
-        </span>
-        <span class="switch">
-          <input type="checkbox" id="badges" checked>
-          <span class="switch-track"><span class="switch-thumb"></span></span>
-        </span>
-      </label>
-      <label class="setting" for="pageGuard">
-        <span class="setting-text">
-          Защита страниц входа
-          <small>предупреждение на поддельных формах</small>
-        </span>
-        <span class="switch">
-          <input type="checkbox" id="pageGuard" checked>
-          <span class="switch-track"><span class="switch-thumb"></span></span>
-        </span>
-      </label>
-      <label class="setting" for="feedEnabled">
-        <span class="setting-text">
-          Живой список угроз
-          <small>база фишинга URLhaus, локально</small>
-        </span>
-        <span class="switch">
-          <input type="checkbox" id="feedEnabled" checked>
-          <span class="switch-track"><span class="switch-thumb"></span></span>
-        </span>
-      </label>
-    </div>
-
-    <div class="custom-domain">
-      <div class="custom-domain-row">
-        <input type="text" id="custom-domain-input" placeholder="Добавить сайт в белый список: example.com" class="custom-domain-input">
-        <button type="button" id="custom-domain-btn" class="custom-domain-btn">Добавить</button>
+          <a class="suggest" id="suggest" hidden>
+            <span class="suggest-label">Перейти на настоящий сайт</span>
+            <span class="suggest-host" id="suggest-host"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+          </a>
+        </section>
       </div>
-      <div id="custom-domain-msg" class="custom-domain-msg"></div>
-      <details class="rules" id="rules">
-        <summary class="rules-summary">
-          Ваши правила <span class="rules-count" id="rules-count">0</span>
-          <svg class="rules-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-        </summary>
-        <ul class="rules-list" id="rules-list"></ul>
-      </details>
-    </div>
-  </section>
 
-  <footer class="footer">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/></svg>
-    Проверка выполняется локально. Живой список — единственный сетевой запрос.
-  </footer>
+      <!-- Right column: protection level + stats -->
+      <div class="col">
+        <section class="protection">
+          <div class="protection-cap">Уровень защиты</div>
+          <div class="gauge-wrap">
+            <svg class="gauge" viewBox="0 0 200 118" aria-hidden="true">
+              <path class="gauge-track" d="M16 102 A84 84 0 0 1 184 102"/>
+              <path class="gauge-value" id="gauge-value" d="M16 102 A84 84 0 0 1 184 102"/>
+            </svg>
+            <div class="gauge-read">
+              <span class="gauge-num" id="gauge-num">100</span>
+              <span class="gauge-den">/ 100</span>
+            </div>
+          </div>
+          <div class="gauge-label" id="gauge-label">
+            <span class="gauge-dot"></span><span id="gauge-label-text">Максимальная защита</span>
+          </div>
+        </section>
+
+        <section class="stats">
+          <div class="stat">
+            <div class="stat-num" id="stat-blocked">0</div>
+            <div class="stat-cap">заблокировано</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-num" id="stat-proceeded">0</div>
+            <div class="stat-cap">пропущено вами</div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <section class="settings">
+      <div class="toggles">
+        <label class="setting" for="blockWarnings">
+          <span class="setting-text">Блокировать подозрительные<small>уровень «warning», не только явный фишинг</small></span>
+          <span class="switch"><input type="checkbox" id="blockWarnings" checked><span class="switch-track"><span class="switch-thumb"></span></span></span>
+        </label>
+        <label class="setting" for="badges">
+          <span class="setting-text">Значки доверия у ссылок<small>зелёный щит у проверенных сайтов</small></span>
+          <span class="switch"><input type="checkbox" id="badges" checked><span class="switch-track"><span class="switch-thumb"></span></span></span>
+        </label>
+        <label class="setting" for="pageGuard">
+          <span class="setting-text">Защита страниц входа<small>предупреждение на поддельных формах</small></span>
+          <span class="switch"><input type="checkbox" id="pageGuard" checked><span class="switch-track"><span class="switch-thumb"></span></span></span>
+        </label>
+        <label class="setting" for="feedEnabled">
+          <span class="setting-text">Живой список угроз<small>база фишинга URLhaus, локально</small></span>
+          <span class="switch"><input type="checkbox" id="feedEnabled" checked><span class="switch-track"><span class="switch-thumb"></span></span></span>
+        </label>
+      </div>
+
+      <button class="rules-open" id="rules-open" type="button">
+        <span class="rules-open-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        </span>
+        <span class="rules-open-text">Мои правила (белый / чёрный список)</span>
+        <span class="rules-count" id="rules-count">0</span>
+        <svg class="rules-open-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
+    <footer class="footer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/></svg>
+      Проверка выполняется локально. Живой список — единственный сетевой запрос.
+    </footer>
+  </div>
+
+  <!-- ============ Rules manager view ============ -->
+  <section class="view-rules" id="view-rules" hidden>
+    <div class="rv-top">
+      <button class="rv-back" id="rv-back" type="button" aria-label="Назад">
+        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <span class="rv-title">Мои правила</span>
+      <span class="rules-count" id="rv-count">0</span>
+    </div>
+
+    <div class="rv-add">
+      <input type="text" id="rv-add-input" class="rv-add-input" placeholder="example.com — добавить в белый список">
+      <button type="button" id="rv-add-btn" class="rv-add-btn">Добавить</button>
+    </div>
+    <div id="rv-msg" class="rv-msg"></div>
+
+    <div class="rv-searchwrap">
+      <svg class="rv-search-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 4.2 12.6l4.1 4.1 1.4-1.4-4.1-4.1A7 7 0 0 0 11 4Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"/></svg>
+      <input type="text" id="rv-search" class="rv-search" placeholder="Поиск по доменам…">
+    </div>
+
+    <div class="rv-filters">
+      <button type="button" class="rv-chip is-active" data-f="all">Все <b id="cnt-all">0</b></button>
+      <button type="button" class="rv-chip" data-f="allow">Белые <b id="cnt-allow">0</b></button>
+      <button type="button" class="rv-chip" data-f="block">Чёрные <b id="cnt-block">0</b></button>
+    </div>
+
+    <ul class="rv-list" id="rv-list"></ul>
+    <div class="rv-foot" id="rv-foot"></div>
+  </section>
 
   <script src="popup.js"></script>
 </body>

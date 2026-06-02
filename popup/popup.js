@@ -187,57 +187,90 @@ async function init() {
 
   refreshGauge()
 
-  // Custom domain addition
-  const customDomainInput = $('custom-domain-input')
-  const customDomainBtn = $('custom-domain-btn')
-  const customDomainMsg = $('custom-domain-msg')
-
-  customDomainBtn.addEventListener('click', async () => {
-    let raw = customDomainInput.value.trim()
-    if (!raw) return
-    
-    let host = raw
-    if (host.startsWith('http://') || host.startsWith('https://')) {
-      try { host = new URL(host).hostname } catch {}
-    }
-    host = host.toLowerCase()
-
-    await send({ type: 'allowAlways', host })
-    
-    customDomainInput.value = ''
-    customDomainMsg.textContent = `Домен ${host} добавлен в белый список`
-    customDomainMsg.style.color = '#16a34a' // success green
-    setTimeout(() => { customDomainMsg.textContent = '' }, 3000)
-
-    // Re-analyze just in case we are on that domain right now
-    await analyzeActiveTab()
-    await renderRules()
+  // Rules manager: open / close + wiring
+  $('rules-open').addEventListener('click', openRules)
+  $('rv-back').addEventListener('click', closeRules)
+  $('rv-add-btn').addEventListener('click', addRuleFromInput)
+  $('rv-add-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addRuleFromInput() })
+  $('rv-search').addEventListener('input', (e) => {
+    rulesQuery = e.target.value.trim().toLowerCase()
+    renderRulesList()
   })
+  for (const chip of document.querySelectorAll('.rv-chip')) {
+    chip.addEventListener('click', () => {
+      rulesFilter = chip.dataset.f
+      for (const c of document.querySelectorAll('.rv-chip')) c.classList.toggle('is-active', c === chip)
+      renderRulesList()
+    })
+  }
 
   await analyzeActiveTab()
-  await renderRules()
+  await loadRules()
 }
 
-// Render the user's own rules (whitelist + blocklist) with per-row removal.
-async function renderRules() {
+// ============ Rules manager ============
+const RENDER_CAP = 300
+let allRules = [] // [{ host, type }]
+let rulesFilter = 'all' // all | allow | block
+let rulesQuery = ''
+
+function openRules() {
+  $('view-dash').hidden = true
+  $('view-rules').hidden = false
+  $('rv-search').focus()
+}
+function closeRules() {
+  $('view-rules').hidden = true
+  $('view-dash').hidden = false
+}
+
+async function loadRules() {
   const res = (await send({ type: 'getUserRules' })) || {}
-  const items = [
-    ...(res.allow || []).map((host) => ({ host, type: 'allow' })),
-    ...(res.block || []).map((host) => ({ host, type: 'block' })),
-  ]
-  const list = $('rules-list')
-  $('rules-count').textContent = String(items.length)
+  const allow = res.allow || []
+  const block = res.block || []
+  allRules = [
+    ...allow.map((host) => ({ host, type: 'allow' })),
+    ...block.map((host) => ({ host, type: 'block' })),
+  ].sort((a, b) => a.host.localeCompare(b.host))
+
+  $('rules-count').textContent = String(allRules.length)
+  $('rv-count').textContent = String(allRules.length)
+  $('cnt-all').textContent = String(allRules.length)
+  $('cnt-allow').textContent = String(allow.length)
+  $('cnt-block').textContent = String(block.length)
+  renderRulesList()
+}
+
+function plural(n, one, few, many) {
+  const m10 = n % 10
+  const m100 = n % 100
+  if (m10 === 1 && m100 !== 11) return one
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few
+  return many
+}
+
+function renderRulesList() {
+  const list = $('rv-list')
+  const foot = $('rv-foot')
   list.innerHTML = ''
 
-  if (!items.length) {
+  const filtered = allRules.filter(
+    (r) =>
+      (rulesFilter === 'all' || r.type === rulesFilter) &&
+      (!rulesQuery || r.host.includes(rulesQuery))
+  )
+
+  if (!filtered.length) {
     const li = document.createElement('li')
     li.className = 'rules-empty'
-    li.textContent = 'Вы пока не добавляли свои домены'
+    li.textContent = allRules.length ? 'Ничего не найдено' : 'Вы пока не добавляли свои домены'
     list.appendChild(li)
+    foot.textContent = ''
     return
   }
 
-  for (const { host, type } of items) {
+  const shown = filtered.slice(0, RENDER_CAP)
+  for (const { host, type } of shown) {
     const li = document.createElement('li')
     li.className = 'rule-item'
 
@@ -254,16 +287,44 @@ async function renderRules() {
     del.className = 'rule-del'
     del.type = 'button'
     del.textContent = '✕'
-    del.title = 'Удалить правило'
+    del.title = 'Удалить'
     del.addEventListener('click', async () => {
       await send({ type: 'removeUserRule', host })
-      await renderRules()
-      await analyzeActiveTab()
+      await loadRules()
+      analyzeActiveTab()
     })
 
     li.append(tag, name, del)
     list.appendChild(li)
   }
+
+  foot.textContent =
+    filtered.length > shown.length
+      ? `Показано ${shown.length} из ${filtered.length} — уточните поиск`
+      : `${filtered.length} ${plural(filtered.length, 'правило', 'правила', 'правил')}`
+}
+
+let _msgTimer = 0
+function showRvMsg(text, isError) {
+  const el = $('rv-msg')
+  el.textContent = text
+  el.style.color = isError ? '#dc2626' : '#16a34a'
+  clearTimeout(_msgTimer)
+  _msgTimer = setTimeout(() => { el.textContent = '' }, 3000)
+}
+
+async function addRuleFromInput() {
+  const input = $('rv-add-input')
+  let host = input.value.trim()
+  if (!host) return
+  if (/^https?:\/\//i.test(host)) { try { host = new URL(host).hostname } catch {} }
+  host = host.toLowerCase().replace(/^www\./, '')
+  if (!host.includes('.')) { showRvMsg('Введите корректный домен', true); return }
+  await send({ type: 'allowAlways', host })
+  input.value = ''
+  showRvMsg(`${host} добавлен в белый список`)
+  await loadRules()
+  analyzeActiveTab()
 }
 
 init()
