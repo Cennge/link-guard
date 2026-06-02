@@ -659,3 +659,39 @@ body[data-enabled='false'] .hero-status { color: var(--muted); }
 .modal-cancel:hover { background: var(--surface); }
 .modal-danger { background: #dc2626; color: #fff; border-color: #dc2626; }
 .modal-danger:hover { filter: brightness(1.05); }
+
+/* ============ Rules: add-target segmented + bulk selection ============ */
+.rv-seg {
+  display: flex; flex: 0 0 auto;
+  border: 1px solid var(--border); border-radius: 9px; overflow: hidden;
+}
+.rv-seg-btn {
+  padding: 8px 11px; border: 0; background: var(--bg);
+  font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer;
+}
+.rv-seg-btn + .rv-seg-btn { border-left: 1px solid var(--border); }
+.rv-seg-btn.is-active[data-t="allow"] { background: #16a34a; color: #fff; }
+.rv-seg-btn.is-active[data-t="block"] { background: #dc2626; color: #fff; }
+
+.rv-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-top: 10px; min-height: 28px;
+}
+.rv-checkall {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  cursor: pointer; user-select: none;
+}
+.rv-checkall input, .rule-check {
+  width: 16px; height: 16px; flex: 0 0 auto;
+  accent-color: var(--accent); cursor: pointer;
+}
+.rv-bulk { display: flex; gap: 6px; }
+.rv-bulkbtn {
+  padding: 5px 9px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer;
+}
+.rv-bulkbtn:hover { background: var(--surface); }
+.rv-bulkbtn.danger { color: #b91c1c; border-color: #f1c7c7; background: #fdeaea; }
+.rv-bulkbtn.danger:hover { background: #fbdcdc; }
+.rule-item.is-selected { border-color: var(--accent); background: var(--accent-soft); }

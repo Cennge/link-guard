@@ -144,7 +144,11 @@
     </div>
 
     <div class="rv-add">
-      <input type="text" id="rv-add-input" class="rv-add-input" placeholder="example.com — добавить в белый список">
+      <input type="text" id="rv-add-input" class="rv-add-input" placeholder="example.com">
+      <div class="rv-seg" id="rv-seg">
+        <button type="button" class="rv-seg-btn is-active" data-t="allow">Белый</button>
+        <button type="button" class="rv-seg-btn" data-t="block">Чёрный</button>
+      </div>
       <button type="button" id="rv-add-btn" class="rv-add-btn">Добавить</button>
     </div>
     <div id="rv-msg" class="rv-msg"></div>
@@ -160,10 +164,18 @@
       <button type="button" class="rv-chip" data-f="block">Чёрные <b id="cnt-block">0</b></button>
     </div>
 
+    <div class="rv-bar">
+      <label class="rv-checkall"><input type="checkbox" id="rv-checkall"><span id="rv-checkall-label">Выбрать все</span></label>
+      <div class="rv-bulk" id="rv-bulk" hidden>
+        <button type="button" class="rv-bulkbtn" id="rv-bulk-white">→ Белый</button>
+        <button type="button" class="rv-bulkbtn" id="rv-bulk-black">→ Чёрный</button>
+        <button type="button" class="rv-bulkbtn danger" id="rv-bulk-del">Удалить</button>
+      </div>
+    </div>
+
     <ul class="rv-list" id="rv-list"></ul>
     <div class="rv-foot">
       <span id="rv-foot-text"></span>
-      <button type="button" id="rv-clear" class="rv-clear" hidden></button>
     </div>
   </section>
 

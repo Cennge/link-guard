@@ -210,7 +210,24 @@ async function init() {
     if (file) importRulesFile(file)
     e.target.value = ''
   })
-  $('rv-clear').addEventListener('click', clearFiltered)
+  // Add-target segmented control (white / black list)
+  for (const seg of document.querySelectorAll('.rv-seg-btn')) {
+    seg.addEventListener('click', () => {
+      addTarget = seg.dataset.t
+      for (const b of document.querySelectorAll('.rv-seg-btn')) b.classList.toggle('is-active', b === seg)
+    })
+  }
+  // Bulk selection
+  $('rv-checkall').addEventListener('change', (e) => {
+    for (const r of currentFiltered) {
+      if (e.target.checked) selected.add(r.host)
+      else selected.delete(r.host)
+    }
+    renderRulesList()
+  })
+  $('rv-bulk-del').addEventListener('click', deleteSelected)
+  $('rv-bulk-white').addEventListener('click', () => moveSelected('allow'))
+  $('rv-bulk-black').addEventListener('click', () => moveSelected('block'))
 
   await analyzeActiveTab()
   await loadRules()
@@ -223,6 +240,8 @@ let rulesFilter = 'all' // all | allow | block
 let rulesQuery = ''
 let currentFiltered = [] // rules matching the active filter+search (full, uncapped)
 let lastDeleted = [] // [{ host, type }] from the most recent delete, for undo
+let addTarget = 'allow' // which list the add field targets: allow | block
+const selected = new Set() // hosts ticked for bulk editing
 
 function openRules() {
   document.querySelector('.topbar').hidden = true
@@ -237,6 +256,7 @@ function closeRules() {
 }
 
 async function loadRules() {
+  selected.clear()
   const res = (await send({ type: 'getUserRules' })) || {}
   const allow = res.allow || []
   const block = res.block || []
@@ -264,7 +284,6 @@ function plural(n, one, few, many) {
 function renderRulesList() {
   const list = $('rv-list')
   const footText = $('rv-foot-text')
-  const clearBtn = $('rv-clear')
   list.innerHTML = ''
 
   currentFiltered = allRules.filter(
@@ -280,14 +299,26 @@ function renderRulesList() {
     li.textContent = allRules.length ? 'Ничего не найдено' : 'Вы пока не добавляли свои домены'
     list.appendChild(li)
     footText.textContent = ''
-    clearBtn.hidden = true
+    updateSelectionUI()
     return
   }
 
   const shown = filtered.slice(0, RENDER_CAP)
   for (const { host, type } of shown) {
     const li = document.createElement('li')
-    li.className = 'rule-item'
+    li.className = 'rule-item' + (selected.has(host) ? ' is-selected' : '')
+
+    const check = document.createElement('input')
+    check.type = 'checkbox'
+    check.className = 'rule-check'
+    check.checked = selected.has(host)
+    check.title = 'Выбрать'
+    check.addEventListener('change', () => {
+      if (check.checked) selected.add(host)
+      else selected.delete(host)
+      li.classList.toggle('is-selected', check.checked)
+      updateSelectionUI()
+    })
 
     const tag = document.createElement('span')
     tag.className = `rule-tag ${type}`
@@ -311,7 +342,7 @@ function renderRulesList() {
       showUndo(`Удалено: ${host}`)
     })
 
-    li.append(tag, name, del)
+    li.append(check, tag, name, del)
     list.appendChild(li)
   }
 
@@ -319,9 +350,17 @@ function renderRulesList() {
     filtered.length > shown.length
       ? `Показано ${shown.length} из ${filtered.length} — уточните поиск`
       : `${filtered.length} ${plural(filtered.length, 'правило', 'правила', 'правил')}`
-  const isAll = rulesFilter === 'all' && !rulesQuery
-  clearBtn.hidden = false
-  clearBtn.textContent = isAll ? `Очистить всё (${filtered.length})` : `Удалить эти (${filtered.length})`
+  updateSelectionUI()
+}
+
+function updateSelectionUI() {
+  const n = selected.size
+  $('rv-bulk').hidden = n === 0
+  $('rv-checkall-label').textContent = n ? `Выбрано: ${n}` : 'Выбрать все'
+  const allSel = currentFiltered.length > 0 && currentFiltered.every((r) => selected.has(r.host))
+  const box = $('rv-checkall')
+  box.checked = allSel
+  box.indeterminate = n > 0 && !allSel
 }
 
 let _msgTimer = 0
@@ -373,9 +412,9 @@ async function addRuleFromInput() {
   if (/^https?:\/\//i.test(host)) { try { host = new URL(host).hostname } catch {} }
   host = host.toLowerCase().replace(/^www\./, '')
   if (!host.includes('.')) { showRvMsg('Введите корректный домен', true); return }
-  await send({ type: 'allowAlways', host })
+  await send({ type: addTarget === 'block' ? 'blockAlways' : 'allowAlways', host })
   input.value = ''
-  showRvMsg(`${host} добавлен в белый список`)
+  showRvMsg(`${host} → ${addTarget === 'block' ? 'чёрный' : 'белый'} список`)
   await loadRules()
   analyzeActiveTab()
 }
@@ -410,22 +449,35 @@ function confirmModal(text, okLabel = 'Удалить') {
   })
 }
 
-async function clearFiltered() {
-  const hosts = currentFiltered.map((r) => r.host)
-  if (!hosts.length) return
-  const isAll = rulesFilter === 'all' && !rulesQuery
-  const ok = await confirmModal(
-    isAll
-      ? `Удалить все ваши правила (${hosts.length})? Действие необратимо.`
-      : `Удалить выбранные правила (${hosts.length})? Действие необратимо.`,
-    isAll ? 'Очистить всё' : 'Удалить'
-  )
+function selectedItems() {
+  const byHost = new Map(allRules.map((r) => [r.host, r.type]))
+  return [...selected].filter((h) => byHost.has(h)).map((h) => ({ host: h, type: byHost.get(h) }))
+}
+
+async function deleteSelected() {
+  const items = selectedItems()
+  if (!items.length) return
+  const ok = await confirmModal(`Удалить выбранные правила (${items.length})? Действие необратимо.`, 'Удалить')
   if (!ok) return
-  lastDeleted = currentFiltered.map((r) => ({ host: r.host, type: r.type }))
-  await send({ type: 'removeUserRules', hosts })
+  lastDeleted = items
+  await send({ type: 'removeUserRules', hosts: items.map((i) => i.host) })
   await loadRules()
   analyzeActiveTab()
-  showUndo(`Удалено: ${hosts.length}`)
+  showUndo(`Удалено: ${items.length}`)
+}
+
+async function moveSelected(toType) {
+  const items = selectedItems().filter((i) => i.type !== toType)
+  if (!items.length) {
+    showRvMsg('Нечего переносить', true)
+    return
+  }
+  const hosts = items.map((i) => i.host)
+  await send({ type: 'removeUserRules', hosts })
+  await send({ type: 'importUserRules', allow: toType === 'allow' ? hosts : [], block: toType === 'block' ? hosts : [] })
+  await loadRules()
+  analyzeActiveTab()
+  showRvMsg(`Перенесено в ${toType === 'allow' ? 'белый' : 'чёрный'} список: ${hosts.length}`)
 }
 
 function exportRules() {
