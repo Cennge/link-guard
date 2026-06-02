@@ -333,6 +333,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       sendResponse({ ok: true })
       return
     }
+    if (msg.type === 'getUserRules') {
+      sendResponse({
+        allow: [...(await getUserAllow())],
+        block: [...(await getUserBlock())],
+      })
+      return
+    }
     if (msg.type === 'analyze' && msg.url) {
       sendResponse(await classify(msg.url))
       return

@@ -211,9 +211,59 @@ async function init() {
 
     // Re-analyze just in case we are on that domain right now
     await analyzeActiveTab()
+    await renderRules()
   })
 
   await analyzeActiveTab()
+  await renderRules()
+}
+
+// Render the user's own rules (whitelist + blocklist) with per-row removal.
+async function renderRules() {
+  const res = (await send({ type: 'getUserRules' })) || {}
+  const items = [
+    ...(res.allow || []).map((host) => ({ host, type: 'allow' })),
+    ...(res.block || []).map((host) => ({ host, type: 'block' })),
+  ]
+  const list = $('rules-list')
+  $('rules-count').textContent = String(items.length)
+  list.innerHTML = ''
+
+  if (!items.length) {
+    const li = document.createElement('li')
+    li.className = 'rules-empty'
+    li.textContent = 'Вы пока не добавляли свои домены'
+    list.appendChild(li)
+    return
+  }
+
+  for (const { host, type } of items) {
+    const li = document.createElement('li')
+    li.className = 'rule-item'
+
+    const tag = document.createElement('span')
+    tag.className = `rule-tag ${type}`
+    tag.textContent = type === 'allow' ? 'Белый' : 'Чёрный'
+
+    const name = document.createElement('span')
+    name.className = 'rule-host'
+    name.textContent = host
+    name.title = host
+
+    const del = document.createElement('button')
+    del.className = 'rule-del'
+    del.type = 'button'
+    del.textContent = '✕'
+    del.title = 'Удалить правило'
+    del.addEventListener('click', async () => {
+      await send({ type: 'removeUserRule', host })
+      await renderRules()
+      await analyzeActiveTab()
+    })
+
+    li.append(tag, name, del)
+    list.appendChild(li)
+  }
 }
 
 init()
