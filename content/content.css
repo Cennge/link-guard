@@ -1,27 +1,71 @@
 /* Inline trust/warning badge LinkGuard injects next to outbound links. */
 .lg-badge {
+  /* Hard-pin the footprint so host CSS (e.g. `a > span { width: 100% }`) can't
+     stretch the badge and blow up the surrounding layout. */
+  box-sizing: border-box !important;
   display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  margin: 0 3px 0 0;
-  vertical-align: -2px;
-  flex: 0 0 auto;
-  line-height: 0;
-  border-radius: 50%;
+  align-items: center !important;
+  justify-content: center !important;
+  /* Size is driven by --lg-size (set inline, scaled to the link's font size)
+     so the icon looks proportional; falls back to 14px. */
+  width: var(--lg-size, 14px) !important;
+  height: var(--lg-size, 14px) !important;
+  min-width: var(--lg-size, 14px) !important;
+  min-height: var(--lg-size, 14px) !important;
+  max-width: var(--lg-size, 14px) !important;
+  max-height: var(--lg-size, 14px) !important;
+  margin: 0 4px 0 0 !important;
+  padding: 0 !important;
+  /* sit on the text's optical centre (middle of the x-height) */
+  vertical-align: middle !important;
+  /* stay an atomic inline box: never become a flex/grid item that disrupts the
+     link's own layout, never float, never push siblings to a new line. */
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  float: none !important;
+  position: static !important;
+  line-height: 0 !important;
   cursor: help;
   /* don't inherit weird text styling from the host page */
-  font-size: 0;
-  text-indent: 0;
+  font-size: 0 !important;
+  text-indent: 0 !important;
+  white-space: nowrap !important;
+  /* Host pages often rotate/flip spans or icons inside links (e.g.
+     transform: scaleY(-1) / rotate(180deg), or the rotate/scale longhands).
+     Pin the badge container upright so it can't be flipped along with them. */
+  transform: none !important;
+  rotate: none !important;
+  scale: none !important;
+  filter: none !important;
+  direction: ltr !important;
+  writing-mode: horizontal-tb !important;
+}
+
+/* Overlay mode — only for image/icon-only links, where an inline icon would
+   displace the image. Pinned to the image's top-left corner (no flow space, no
+   layout shift). A soft drop-shadow keeps the bare icon legible on any image. */
+.lg-badge.lg-overlay {
+  position: absolute !important;
+  top: 2px !important;
+  left: 2px !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  vertical-align: baseline !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.55)) !important;
 }
 
 .lg-badge svg {
-  width: 14px !important;
-  height: 14px !important;
+  width: 100% !important;
+  height: 100% !important;
   display: block !important;
-  /* some sites flip/rotate all SVGs — keep our badge upright */
+  /* same defence at the SVG level for sites that target svg directly */
   transform: none !important;
+  rotate: none !important;
+  scale: none !important;
   vertical-align: baseline !important;
 }
 
