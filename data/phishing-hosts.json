@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "note": "Bundled known-phishing host blocklist. Hosts here are hard-blocked (DANGER). Merged with the user-updatable 'phishingExtra' storage key, which an optional feed (settings.feedUrl) can refresh.",
+  "updated": null,
+  "hosts": []
+}

@@ -18,7 +18,16 @@ export const Reason = {
   TYPOSQUAT: 'typosquat',
   COMBOSQUAT: 'combosquat',
   MIXED_SCRIPT: 'mixed_script',
+  SUSPICIOUS_STRUCTURE: 'suspicious_structure',
 }
+
+// Words that scream "credential page" when they show up in a hostname. Used
+// only to *raise* suspicion on already-odd hosts — never on their own.
+const PHISH_KEYWORDS = [
+  'login', 'signin', 'sign-in', 'secure', 'verify', 'verification', 'account',
+  'update', 'confirm', 'recover', 'unlock', 'wallet', 'auth', 'support',
+  'billing', 'payment', 'security', 'webscr', 'activate',
+]
 
 // Damerau-Levenshtein distance (handles transpositions like "paaypl" -> "paypal").
 function editDistance(a, b) {
@@ -160,6 +169,40 @@ export function analyze(url) {
           registrable,
           suggestion: brand ? brand.domains[0] : undefined,
         }
+      }
+    }
+  }
+
+  // 5) Credential-phishing structure. A brand name buried INSIDE a label
+  //    (paypal-login, secure-kucoin) or a generally messy host paired with a
+  //    phishing keyword (account-verify-now, lots of hyphens, punycode).
+  const hasPhishKw = PHISH_KEYWORDS.some((kw) => asciiHost.includes(kw))
+  if (hasPhishKw) {
+    for (const label of labels) {
+      const labelSkel = skeleton(label)
+      for (const comboLabel of COMBO_LABELS) {
+        // substring (not exact) — exact was handled in step 4 above
+        if (labelSkel.length > comboLabel.length && labelSkel.includes(comboLabel)) {
+          const brand = BRANDS.find((b) => b.label === comboLabel)
+          return {
+            verdict: Verdict.WARNING,
+            reason: Reason.COMBOSQUAT,
+            brand: brand ? brand.display : comboLabel,
+            hostname: asciiHost,
+            registrable,
+            suggestion: brand ? brand.domains[0] : undefined,
+          }
+        }
+      }
+    }
+    const hyphens = (registrable.match(/-/g) || []).length
+    if (isPuny || hyphens >= 2) {
+      return {
+        verdict: Verdict.WARNING,
+        reason: Reason.SUSPICIOUS_STRUCTURE,
+        hostname: asciiHost,
+        registrable,
+        unicodeHost: isPuny ? unicodeHost : undefined,
       }
     }
   }

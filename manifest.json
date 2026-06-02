@@ -7,7 +7,12 @@
   "permissions": [
     "webNavigation",
     "storage",
-    "activeTab"
+    "activeTab",
+    "declarativeNetRequest",
+    "alarms"
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
   ],
   "background": {
     "service_worker": "src/background.js",

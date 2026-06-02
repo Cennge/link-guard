@@ -1,8 +1,11 @@
 // test/background.test.js
 // Устанавливаем мок-объект chrome глобально до импорта background.js
+import fs from 'node:fs'
+
 const localStore = {}
 const sessionStore = {}
 let updatedTab = null
+const noopEvent = () => ({ addListener: () => {} })
 
 global.chrome = {
   storage: {
@@ -22,7 +25,22 @@ global.chrome = {
     }
   },
   tabs: {
-    update: async (tabId, opts) => { updatedTab = opts }
+    update: async (tabId, opts) => { updatedTab = opts },
+    get: async () => ({ id: 1, url: 'about:blank' }),
+    onUpdated: noopEvent(),
+    onActivated: noopEvent(),
+  },
+  action: {
+    setBadgeText: async () => {},
+    setBadgeBackgroundColor: async () => {},
+  },
+  declarativeNetRequest: {
+    getDynamicRules: async () => [],
+    updateDynamicRules: async () => {},
+  },
+  alarms: {
+    create: () => {},
+    onAlarm: noopEvent(),
   },
   webNavigation: {
     onBeforeNavigate: {
@@ -36,7 +54,20 @@ global.chrome = {
     },
     onInstalled: {
       addListener: (fn) => { global.mockOnInstalled = fn }
-    }
+    },
+    onStartup: noopEvent(),
+  }
+}
+
+// Serve the bundled data files (bloom filter + phishing list) from disk so the
+// service worker's lazy fetches resolve against real artifacts.
+global.fetch = async (url) => {
+  const path = String(url).replace('chrome-extension://mock/', '')
+  const buf = fs.readFileSync(path)
+  return {
+    arrayBuffer: async () => Uint8Array.from(buf).buffer,
+    json: async () => JSON.parse(buf.toString('utf8')),
+    text: async () => buf.toString('utf8'),
   }
 }
 
@@ -100,6 +131,31 @@ async function runTests() {
   assertEqual(batch.badges, true, 'Badges должны быть включены по умолчанию')
   assertEqual(batch.results[0].verdict, 'danger', 'Первый URL в батче (в userBlock) -> danger')
   assertEqual(batch.results[1].verdict, 'safe', 'Второй URL в батче (в userAllow) -> safe')
+
+  // 6. Known-phishing blocklist (phishingExtra storage key)
+  localStore['phishingExtra'] = ['evil-blocklisted.com']
+  res = await sendMessage({ type: 'analyze', url: 'https://evil-blocklisted.com/login' })
+  assertEqual(res.verdict, 'danger', 'Хост из blocklist -> danger')
+  assertEqual(res.reason, 'blocklist', 'Причина должна быть blocklist')
+  delete localStore['phishingExtra']
+
+  // 7. False-positive suppression: a typo-looking host that IS in the top-1M
+  res = await sendMessage({ type: 'analyze', url: 'https://googel.com' })
+  assertEqual(res.verdict, 'safe', 'Популярный домен (top-1M) подавляет WARNING -> safe')
+
+  // 8. ...but a typo host NOT in the top-1M stays a warning
+  res = await sendMessage({ type: 'analyze', url: 'https://whatspp.com' })
+  assertEqual(res.verdict, 'warning', 'Непопулярная опечатка остаётся warning')
+
+  // 9. Credential-phishing structure heuristic
+  res = await sendMessage({ type: 'analyze', url: 'https://account-verify-now.com' })
+  assertEqual(res.verdict, 'warning', 'Подозрительная структура -> warning')
+  assertEqual(res.reason, 'suspicious_structure', 'Причина должна быть suspicious_structure')
+
+  // 10. Combosquat with brand buried in a label
+  res = await sendMessage({ type: 'analyze', url: 'https://secure-paypal-login.com' })
+  assertEqual(res.verdict, 'warning', 'Бренд внутри лейбла + ключевое слово -> warning')
+  assertEqual(res.reason, 'combosquat', 'Причина должна быть combosquat')
 
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
