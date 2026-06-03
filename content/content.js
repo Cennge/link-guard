@@ -340,11 +340,14 @@ const SITE_COSMETICS = [
   {
     match: /rezka|hdrezka/i,
     css: `
+      .brand-container, .brand-header, .brand-columns,
+      .brand-column-left, .brand-column-right, .brand-header-content,
+      .brand-column-content, .brand-header-desk, .brand-header-tab, .brand-header-mob,
       [id^="yandex_rtb"], .adfox, [id*="adfox"], [id*="AdFox"],
       .b-rgmega-container, .b-rgmega, .rgmega, .b-promo__block,
       .reclama, .reklama, [class*="reklama"], [class*="reclama"],
-      .ads, .ad-holder, .partner-block, .b-sidebar__inner .clearfix[id],
-      div[id^="adv_"], div[id^="ad_"], a[href*="//ad."], a[target="_blank"][href*="utm_"] {
+      .ads, .ad-holder, .partner-block,
+      div[id^="adv_"], div[id^="ad_"] {
         display: none !important;
       }`,
   },
