@@ -2,3 +2,6 @@ TASKS.txt
 
 # Local MCP config (contains secrets)
 .mcp.json
+
+# Chrome unpacked-extension metadata
+_metadata/
