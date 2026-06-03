@@ -24,7 +24,8 @@
   "declarative_net_request": {
     "rule_resources": [
       { "id": "ads", "enabled": true, "path": "rules/ads.json" },
-      { "id": "ads-extra", "enabled": true, "path": "rules/ads-extra.json" }
+      { "id": "ads-extra", "enabled": true, "path": "rules/ads-extra.json" },
+      { "id": "ads-regex", "enabled": true, "path": "rules/ads-regex.json" }
     ]
   },
   "background": {
@@ -34,7 +35,7 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["content/antipopup.js"],
+      "js": ["content/antipopup.js", "content/scriptlets.js"],
       "run_at": "document_start"
     },
     {

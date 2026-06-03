@@ -225,7 +225,7 @@ async function syncAdblock() {
   try {
     const s = await getSettings()
     const on = s.enabled !== false && s.adblock !== false
-    const ids = ['ads', 'ads-extra']
+    const ids = ['ads', 'ads-extra', 'ads-regex']
     await chrome.declarativeNetRequest.updateEnabledRulesets(
       on ? { enableRulesetIds: ids } : { disableRulesetIds: ids }
     )

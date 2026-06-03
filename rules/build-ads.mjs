@@ -87,6 +87,31 @@ const rules = [...curated].map((d, i) => ruleFor(d, i + 1))
 fs.writeFileSync(path.join(__dirname, 'ads.json'), JSON.stringify(rules, null, 0))
 console.log(`ads.json: ${rules.length} rules`)
 
+// --- Ruleset 3: regex rules (ads-regex.json) — catch ad-SERVER paths/queries
+// that domain rules (||host^) can't, e.g. first-party /adserver/ endpoints,
+// Revive/OpenX delivery scripts, and ?adslot= style requests. Scoped to
+// non-navigational ad-ish resource types (never main_frame/stylesheet/font) so
+// they can't break page navigation or layout. RE2 inline (?i) = case-insensitive.
+const REGEX_TYPES = ['script', 'image', 'sub_frame', 'xmlhttprequest', 'media', 'object', 'ping', 'websocket', 'other']
+const REGEXES = [
+  '(?i)/(adframe|ad-frame|adserver|ad-server|adservice|adsystem|adbanner|ad-banner|ad_banner|advertising|advertisement)/',
+  '(?i)/(popunder|pop-under|pop_under|popmedia|clickunder|click-under|popad|pop-ad)/',
+  '(?i)[?&](adslot|ad_slot|adunit|ad_unit|adzone|ad_zone|adsize|ad_size|adtype|ad_type)=',
+  '(?i)/(www/)?delivery/[a-z]{2,7}\\.(php|js)',
+  '(?i)/(openx|revive-adserver|adserver)/',
+  '(?i)/(banner_view|bannerview|show_?ads?|get_?ads?|serve_?ads?|deliver_?ads?)\\b',
+  '(?i)[?&](zoneid|bannerid|campaignid|adcampaign|advertiserid)=',
+  '(?i)/(adsbygoogle|prebid|prebid\\.min|pubads|gpt|gpt\\.min)\\.js',
+]
+const regexRules = REGEXES.map((re, i) => ({
+  id: i + 1,
+  priority: 1,
+  action: { type: 'block' },
+  condition: { regexFilter: re, resourceTypes: REGEX_TYPES },
+}))
+fs.writeFileSync(path.join(__dirname, 'ads-regex.json'), JSON.stringify(regexRules, null, 0))
+console.log(`ads-regex.json: ${regexRules.length} rules`)
+
 // --- Ruleset 2: large list from HaGeZi (ads-extra.json), sampled across the
 // whole list to span coverage and stay under the MV3 static-rule budget. ---
 const EXTRA_CAP = 28000
