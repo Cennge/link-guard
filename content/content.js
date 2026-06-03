@@ -336,22 +336,7 @@ const COSMETIC_CSS = `${AD_SELECTOR}{display:none !important;}`
 
 // Per-site cosmetic rules for sites whose ad containers aren't covered by the
 // generic selectors. Keyed by a hostname substring. Best-effort — easy to tune.
-const SITE_COSMETICS = [
-  {
-    match: /rezka|hdrezka/i,
-    css: `
-      .brand-container, .brand-header, .brand-columns,
-      .brand-column-left, .brand-column-right, .brand-header-content,
-      .brand-column-content, .brand-header-desk, .brand-header-tab, .brand-header-mob,
-      [id^="yandex_rtb"], .adfox, [id*="adfox"], [id*="AdFox"],
-      .b-rgmega-container, .b-rgmega, .rgmega, .b-promo__block,
-      .reclama, .reklama, [class*="reklama"], [class*="reclama"],
-      .ads, .ad-holder, .partner-block,
-      div[id^="adv_"], div[id^="ad_"] {
-        display: none !important;
-      }`,
-  },
-]
+const SITE_COSMETICS = []
 function siteCosmeticCss() {
   let css = ''
   for (const r of SITE_COSMETICS) if (r.match.test(location.hostname)) css += r.css

@@ -19,19 +19,9 @@
   'use strict'
 
   var GLOBAL_RULES = [['nofab']]
-  var SITE_RULES = [
-    {
-      match: /rezka|hdrezka/i,
-      rules: [
-        ['set-constant', 'adb', 'false'],
-        ['set-constant', 'adblock', 'false'],
-        ['set-constant', 'adBlockEnabled', 'false'],
-        ['set-constant', 'isAdBlockActive', 'false'],
-        ['set-constant', 'canRunAds', 'true'],
-        ['set-constant', 'canShowAds', 'true'],
-      ],
-    },
-  ]
+  // Per-site flag-pinning rules, keyed by a hostname regex. Empty by default —
+  // add entries only for sites that need specific anti-adblock flags pinned.
+  var SITE_RULES = []
 
   var rules = GLOBAL_RULES.slice()
   for (var i = 0; i < SITE_RULES.length; i++) {
