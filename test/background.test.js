@@ -275,6 +275,19 @@ async function runTests() {
   res = await sendMessage({ type: 'analyzePage', url: 'https://mylocalshop.com/', hasPassword: true })
   assertEqual(res.verdict, 'safe', 'Обычный .com с формой входа -> safe')
 
+  // 26. Sensitive form over http:// -> warning
+  res = await sendMessage({ type: 'analyzePage', url: 'http://account-login-xyz.tld/', hasPassword: true })
+  assertEqual(res.verdict, 'warning', 'Форма по http -> warning')
+  assertEqual(res.reason, 'insecure_form', 'Причина -> insecure_form')
+
+  // 27. Sensitive form on a raw public IP -> warning
+  res = await sendMessage({ type: 'analyzePage', url: 'http://203.0.113.7/login', hasPassword: true })
+  assertEqual(res.verdict, 'warning', 'Форма на публичном IP -> warning')
+
+  // 28. Local router / intranet is NOT flagged
+  res = await sendMessage({ type: 'analyzePage', url: 'http://192.168.1.1/', hasPassword: true })
+  assertEqual(res.verdict, 'safe', 'Роутер 192.168.x -> safe')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })

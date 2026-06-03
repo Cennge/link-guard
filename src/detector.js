@@ -25,6 +25,18 @@ export const Reason = {
   SUSPICIOUS_LOGIN: 'suspicious_login', // alarmist login page on an obscure domain
   PAYMENT_SKIM: 'payment_skim', // card data submitted to another site
   RISKY_DOMAIN: 'risky_domain', // throwaway-looking domain asking for sensitive data
+  INSECURE_FORM: 'insecure_form', // sensitive form over http:// or on a raw public IP
+}
+
+// Local / private / link-local hosts where http or IP access is normal
+// (routers, intranets, dev) — never flagged.
+function isPrivateHost(h) {
+  if (!h) return true
+  if (h === 'localhost' || h === '::1' || h.endsWith('.local') || h.endsWith('.lan') || h.endsWith('.internal') || h.endsWith('.home')) return true
+  return (
+    /^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(h) || /^169\.254\./.test(h)
+  )
 }
 
 // TLDs that are cheap/free and disproportionately abused for phishing.
@@ -267,10 +279,28 @@ export function analyze(url) {
 // look-alike in the URL.
 export function analyzePageSignals(url, signals = {}) {
   const base = analyze(url)
-  const out = { verdict: Verdict.SAFE, hostname: base.hostname, registrable: base.registrable }
-  if (!base.hostname || base.trusted) return out
+  let proto = ''
+  let host = ''
+  try {
+    const u = new URL(url)
+    proto = u.protocol
+    host = u.hostname.toLowerCase()
+  } catch {
+    return { verdict: Verdict.SAFE }
+  }
+  const out = { verdict: Verdict.SAFE, hostname: base.hostname || host, registrable: base.registrable || host }
   // Only credential or payment pages are interesting.
   if (!signals.hasPassword && !signals.hasPayment) return out
+
+  // Sensitive form over plain http:// or on a raw public IP — legitimate login
+  // and checkout pages are HTTPS on a named domain. (Local/private hosts are
+  // excluded; this runs before the brand checks because IP hosts have no
+  // registrable.)
+  if (host && !isPrivateHost(host) && (proto === 'http:' || isIpAddress(host))) {
+    return { verdict: Verdict.WARNING, reason: Reason.INSECURE_FORM, hostname: host, registrable: base.registrable || host }
+  }
+
+  if (!base.hostname || base.trusted) return out
 
   // The page presents a known brand's identity, but the domain isn't theirs.
   const skel = skeleton(String(signals.identity || '').toLowerCase())
