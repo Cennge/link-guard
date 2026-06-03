@@ -77,13 +77,38 @@ const RESOURCE_TYPES = [
   'font', 'ping', 'csp_report', 'websocket', 'other', 'stylesheet', 'object',
 ]
 
-const rules = DOMAINS.map((d, i) => ({
-  id: i + 1,
-  priority: 1,
-  action: { type: 'block' },
-  condition: { urlFilter: `||${d}^`, resourceTypes: RESOURCE_TYPES },
-}))
+function ruleFor(d, id) {
+  return { id, priority: 1, action: { type: 'block' }, condition: { urlFilter: `||${d}^`, resourceTypes: RESOURCE_TYPES } }
+}
 
-const out = path.join(__dirname, 'ads.json')
-fs.writeFileSync(out, JSON.stringify(rules, null, 0))
-console.log(`Wrote ${rules.length} ad-blocking rules to ${out}`)
+// --- Ruleset 1: curated high-value networks (ads.json) ---
+const curated = new Set(DOMAINS.map((d) => d.toLowerCase()))
+const rules = [...curated].map((d, i) => ruleFor(d, i + 1))
+fs.writeFileSync(path.join(__dirname, 'ads.json'), JSON.stringify(rules, null, 0))
+console.log(`ads.json: ${rules.length} rules`)
+
+// --- Ruleset 2: large list from HaGeZi (ads-extra.json), sampled across the
+// whole list to span coverage and stay under the MV3 static-rule budget. ---
+const EXTRA_CAP = 28000
+const SRC = 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/light.txt'
+try {
+  const text = await (await fetch(SRC)).text()
+  const all = text
+    .split(/\r?\n/)
+    .map((l) => l.trim().toLowerCase())
+    .filter((l) => l && !l.startsWith('#') && !l.startsWith('!') && l.includes('.'))
+  const fresh = all.filter((d) => !curated.has(d))
+  const step = Math.max(1, Math.floor(fresh.length / EXTRA_CAP))
+  const picked = []
+  for (let i = 0; i < fresh.length && picked.length < EXTRA_CAP; i += step) picked.push(fresh[i])
+  // start ids well above ruleset 1 to keep them distinct per file (ids only need
+  // to be unique within a ruleset, but distinct ranges keep things tidy)
+  const extra = picked.map((d, i) => ruleFor(d, 100000 + i))
+  fs.writeFileSync(path.join(__dirname, 'ads-extra.json'), JSON.stringify(extra, null, 0))
+  console.log(`ads-extra.json: ${extra.length} rules (sampled from ${all.length}, step ${step})`)
+} catch (e) {
+  console.error('ads-extra: failed to fetch source —', e.message)
+  if (!fs.existsSync(path.join(__dirname, 'ads-extra.json'))) {
+    fs.writeFileSync(path.join(__dirname, 'ads-extra.json'), '[]')
+  }
+}
