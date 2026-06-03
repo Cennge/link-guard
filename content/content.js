@@ -362,11 +362,17 @@ let adblockOn = false
 let cosmeticApplied = false
 const countedAds = typeof WeakSet !== 'undefined' ? new WeakSet() : null
 
+function hostAllowed(list) {
+  const h = location.hostname.replace(/^www\./, '')
+  return (list || []).some((e) => h === e || h.endsWith('.' + e))
+}
+
 async function applyCosmetic() {
   if (cosmeticApplied) return
   const resp = await send({ type: 'getState' })
   const s = resp && resp.settings
   if (!s || s.enabled === false || s.adblock === false) return
+  if (resp && hostAllowed(resp.adAllow)) return // user disabled ads on this site
   cosmeticApplied = true
   adblockOn = true
   const style = document.createElement('style')

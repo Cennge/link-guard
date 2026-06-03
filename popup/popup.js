@@ -138,10 +138,36 @@ function renderDetail(result) {
   }
 }
 
+let adAllowList = []
+let currentTabId = null
+let currentHost = ''
+
+function renderSiteAd() {
+  const btn = $('site-ad')
+  if (!currentHost) { btn.hidden = true; return }
+  const off = adAllowList.some((e) => currentHost === e || currentHost.endsWith('.' + e))
+  btn.hidden = false
+  btn.classList.toggle('is-off', off)
+  btn.textContent = off ? 'Реклама на этом сайте отключена · включить' : 'Не блокировать рекламу здесь'
+}
+
+async function toggleSiteAd() {
+  if (!currentHost) return
+  const off = adAllowList.some((e) => currentHost === e || currentHost.endsWith('.' + e))
+  // off=true means ads are currently NOT blocked here → re-enable (on:false=remove);
+  // off=false means ads ARE blocked → disable here (on:true=add).
+  const res = await send({ type: 'adAllowSet', host: currentHost, on: !off })
+  adAllowList = (res && res.allow) || adAllowList
+  renderSiteAd()
+  if (currentTabId != null) chrome.tabs.reload(currentTabId)
+}
+
 async function analyzeActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
 
   if (!tab || !tab.url || !/^https?:/.test(tab.url)) {
+    currentHost = ''
+    renderSiteAd()
     renderHero('none', tab && tab.url ? 'служебная страница' : '—')
     renderDetail({ verdict: 'none' })
     return
@@ -149,6 +175,9 @@ async function analyzeActiveTab() {
 
   let host = tab.url
   try { host = new URL(tab.url).hostname } catch {}
+  currentTabId = tab.id
+  currentHost = host.replace(/^www\./, '')
+  renderSiteAd()
 
   const result = await send({ type: 'analyze', url: tab.url })
   renderHero(result.verdict, result.unicodeHost || host)
@@ -156,11 +185,14 @@ async function analyzeActiveTab() {
 }
 
 async function init() {
-  const { settings, stats } = await send({ type: 'getState' })
+  const resp = await send({ type: 'getState' })
+  const { settings, stats } = resp
+  adAllowList = resp.adAllow || []
 
   $('stat-blocked').textContent = stats.blocked
   $('stat-proceeded').textContent = stats.proceeded
   $('stat-ads').textContent = stats.adsBlocked || 0
+  $('site-ad').addEventListener('click', toggleSiteAd)
 
   // Live copy of settings that drives the protection gauge.
   const state = { ...settings }

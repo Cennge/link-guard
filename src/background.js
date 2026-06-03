@@ -18,6 +18,13 @@ const USER_BLOCK_KEY = 'userBlock'
 const PHISH_KEY = 'phishingExtra'
 // Ad/tracker hosts from the updatable ad feed.
 const AD_KEY = 'adExtra'
+// Sites where the user disabled ad blocking ("not on this site").
+const AD_ALLOW_KEY = 'adAllow'
+
+async function getAdAllow() {
+  const { [AD_ALLOW_KEY]: a } = await chrome.storage.local.get(AD_ALLOW_KEY)
+  return new Set(a || [])
+}
 
 const defaultSettings = {
   enabled: true,
@@ -172,14 +179,15 @@ async function syncBlockRules() {
       'main_frame', 'sub_frame', 'script', 'xmlhttprequest', 'image',
       'stylesheet', 'font', 'media', 'websocket', 'other',
     ]
+    // Phishing / user-block rules at HIGH priority (10) so a per-site ad
+    // exemption (allowAllRequests, priority 2) never disables phishing blocking.
     for (const h of new Set([...(await getPhishSet()), ...(await getUserBlock())])) {
       if (allowed.has(h)) continue // respect "proceed anyway" / whitelist
       if (id > 8000) break // DNR dynamic-rule budget guard
-      rules.push({ id: id++, priority: 1, action: { type: 'block' }, condition: { urlFilter: `||${h}^`, resourceTypes: PHISH_TYPES } })
+      rules.push({ id: id++, priority: 10, action: { type: 'block' }, condition: { urlFilter: `||${h}^`, resourceTypes: PHISH_TYPES } })
     }
 
-    // Ad/tracker feed (dynamic) — only while ad blocking is on. Excludes the
-    // main frame so we never block a top-level navigation to such a host.
+    // Ad/tracker feed (dynamic), priority 1 — only while ad blocking is on.
     if (settings.adblock !== false) {
       const { [AD_KEY]: ads } = await chrome.storage.local.get(AD_KEY)
       const AD_TYPES = [
@@ -191,6 +199,18 @@ async function syncBlockRules() {
         if (id > 8000 + ADFEED_CAP) break
         rules.push({ id: id++, priority: 1, action: { type: 'block' }, condition: { urlFilter: `||${h}^`, resourceTypes: AD_TYPES } })
       }
+    }
+
+    // Per-site ad exemption: allowAllRequests (priority 2) beats ad block rules
+    // (priority 1) but not phishing rules (priority 10). Frees the whole page.
+    let aid = 9000000
+    for (const h of await getAdAllow()) {
+      rules.push({
+        id: aid++,
+        priority: 2,
+        action: { type: 'allowAllRequests' },
+        condition: { requestDomains: [h], resourceTypes: ['main_frame', 'sub_frame'] },
+      })
     }
 
     await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules })
@@ -522,7 +542,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       sendResponse({
         settings: await getSettings(),
         stats: (await chrome.storage.local.get('stats')).stats || { blocked: 0, proceeded: 0, adsBlocked: 0 },
+        adAllow: [...(await getAdAllow())],
       })
+      return
+    }
+    if (msg.type === 'adAllowSet' && msg.host) {
+      const host = String(msg.host).toLowerCase().replace(/^www\./, '')
+      const set = await getAdAllow()
+      if (msg.on === false) set.delete(host)
+      else set.add(host)
+      await chrome.storage.local.set({ [AD_ALLOW_KEY]: [...set] })
+      await syncBlockRules()
+      sendResponse({ ok: true, allow: [...set] })
       return
     }
     if (msg.type === 'setSettings') {

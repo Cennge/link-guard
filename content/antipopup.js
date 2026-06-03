@@ -6,9 +6,12 @@
 // background opens, blank-then-redirect pop-unders, and extra opens fired by a
 // single click — the classic pop-under pattern.
 try {
-  chrome.storage.local.get('settings', (data) => {
+  chrome.storage.local.get(['settings', 'adAllow'], (data) => {
     const s = (data && data.settings) || {}
     if (s.enabled === false || s.adblock === false) return
+    const h = location.hostname.replace(/^www\./, '')
+    const allowed = (data.adAllow || []).some((e) => h === e || h.endsWith('.' + e))
+    if (allowed) return // user disabled ad blocking on this site
     const code = `(function(){
       try {
         var realOpen = window.open;

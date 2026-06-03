@@ -290,6 +290,14 @@ async function runTests() {
   res = await sendMessage({ type: 'analyzePage', url: 'http://192.168.1.1/', hasPassword: true })
   assertEqual(res.verdict, 'safe', 'Роутер 192.168.x -> safe')
 
+  // 29. Per-site ad allowlist add/remove
+  await sendMessage({ type: 'adAllowSet', host: 'www.example-site.com', on: true })
+  let st = await sendMessage({ type: 'getState' })
+  assertEqual(st.adAllow.includes('example-site.com'), true, 'adAllowSet добавляет сайт (нормализует www)')
+  await sendMessage({ type: 'adAllowSet', host: 'example-site.com', on: false })
+  st = await sendMessage({ type: 'getState' })
+  assertEqual(st.adAllow.includes('example-site.com'), false, 'adAllowSet убирает сайт')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })
