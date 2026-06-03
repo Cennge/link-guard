@@ -45,13 +45,36 @@ const DOMAINS = [
   'smaato.net', 'adcolony.com',
   // RU/CIS ad & tracking
   'an.yandex.ru', 'mc.yandex.ru', 'yandexadexchange.net', 'adfox.ru',
-  'top-fwz1.mail.ru', 'ads.adfox.ru', 'rambler.ru/ads', 'directadvert.ru',
+  'top-fwz1.mail.ru', 'ads.adfox.ru', 'directadvert.ru',
   'marketgid.com', 'luxup.ru', 'relap.io',
+
+  // Popunder / clickunder / aggressive networks (heavy on pirate-stream sites)
+  'ad-maven.com', 'admaven.com', 'displaycontentnetwork.com', 'topclickguru.com',
+  'loawx.com', 'pushwhy.com', 'clickadu.com', 'galaksion.com', 'adskeeper.com',
+  'adskeeper.co.uk', 'bodelen.com', 'gandrad.org', 'onclickalgo.com',
+  'onclickperformance.com', 'onclicksuper.com', 'onclickmax.com', 'onclickmega.com',
+  'tsyndicate.com', 'cdn.tsyndicate.com', 'realsrv.com', 'magsrv.com',
+  'a.realsrv.com', 'syndication.exosrv.com', 'exosrv.com', 'poweredby.jads.co',
+  'jads.co', 'hpr.outbrain.com', 'vidoomy.com', 'vntsm.com', 'aniview.com',
+  'alooyu.com', 'aocet.com', 'admngr.com', 'adnium.com', 'adavin.com',
+  'pgred90.com', 'wpadmngr.com', 'mybetterdailythings.com', 'dolohen.com',
+  'go.oclasrv.com', 'oclasrv.com', 'go.pddxn.com', 'pddxn.com', 'allnitead.com',
+  'hexagram.io', 'pop.adsterratech.com', 'adsterratech.com',
+  'highperformanceformat.com', 'effectivecpmgate.com', 'effectivegatecpm.com',
+  'profitabledisplaynetwork.com', 'revenuecpmgate.com', 'adcdnxz.com',
+
+  // In-browser crypto miners (very common on pirate sites)
+  'coinhive.com', 'coin-hive.com', 'authedmine.com', 'jsecoin.com',
+  'cryptoloot.pro', 'crypto-loot.com', 'webminepool.com', 'minero.cc',
+  'coinimp.com', 'webmine.cz', 'ppoi.org', 'mepirtedch.com',
+  'webminerpool.com', 'monerominer.rocks',
 ]
 
 const RESOURCE_TYPES = [
-  'script', 'image', 'sub_frame', 'xmlhttprequest', 'media', 'font',
-  'ping', 'csp_report', 'websocket', 'other', 'stylesheet', 'object',
+  // main_frame included so pop-under / pop-up tabs that navigate to an ad
+  // domain are killed (a major nuisance on pirate-streaming sites).
+  'main_frame', 'sub_frame', 'script', 'image', 'xmlhttprequest', 'media',
+  'font', 'ping', 'csp_report', 'websocket', 'other', 'stylesheet', 'object',
 ]
 
 const rules = DOMAINS.map((d, i) => ({

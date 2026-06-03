@@ -183,8 +183,8 @@ async function syncBlockRules() {
     if (settings.adblock !== false) {
       const { [AD_KEY]: ads } = await chrome.storage.local.get(AD_KEY)
       const AD_TYPES = [
-        'sub_frame', 'script', 'xmlhttprequest', 'image', 'stylesheet',
-        'font', 'media', 'websocket', 'other', 'object', 'ping',
+        'main_frame', 'sub_frame', 'script', 'xmlhttprequest', 'image',
+        'stylesheet', 'font', 'media', 'websocket', 'other', 'object', 'ping',
       ]
       for (const h of ads || []) {
         if (allowed.has(h)) continue
