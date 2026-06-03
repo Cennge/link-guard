@@ -16,6 +16,8 @@ const USER_ALLOW_KEY = 'userAllow'
 const USER_BLOCK_KEY = 'userBlock'
 // User/feed-supplied phishing hosts (merged with the bundled blocklist).
 const PHISH_KEY = 'phishingExtra'
+// Ad/tracker hosts from the updatable ad feed.
+const AD_KEY = 'adExtra'
 
 const defaultSettings = {
   enabled: true,
@@ -25,6 +27,8 @@ const defaultSettings = {
   pageGuard: true,
   // Block ads / trackers via the bundled DNR ruleset + cosmetic CSS.
   adblock: true,
+  // Updatable ad/tracker domain feed (free, no key) — adds to the bundled rules.
+  adFeeds: ['https://pgl.yoyo.org/adservers/serverlist.php?hostformat=plain&showintro=0&mimetype=plaintext'],
   // Known-phishing host feeds — all free, no API key, no registration. They are
   // DOWNLOADED and checked locally (no browsing data leaves the device). Set
   // feedEnabled:false to go fully offline.
@@ -40,7 +44,8 @@ const defaultSettings = {
   feedUrl: '',
 }
 
-const FEED_CAP = 150000 // max feed hosts kept in storage
+const FEED_CAP = 150000 // max phishing feed hosts kept in storage
+const ADFEED_CAP = 12000 // max ad-feed hosts (kept as DNR dynamic rules)
 
 // --- Known-phishing blocklist (bundled file + user/feed extra) ---
 let _bundledPhish = null
@@ -163,22 +168,31 @@ async function syncBlockRules() {
     const allowed = new Set([...(await getUserAllow()), ...(await getAllowlist())])
     const rules = []
     let id = 1
+    const PHISH_TYPES = [
+      'main_frame', 'sub_frame', 'script', 'xmlhttprequest', 'image',
+      'stylesheet', 'font', 'media', 'websocket', 'other',
+    ]
     for (const h of new Set([...(await getPhishSet()), ...(await getUserBlock())])) {
       if (allowed.has(h)) continue // respect "proceed anyway" / whitelist
       if (id > 8000) break // DNR dynamic-rule budget guard
-      rules.push({
-        id: id++,
-        priority: 1,
-        action: { type: 'block' },
-        condition: {
-          urlFilter: `||${h}^`,
-          resourceTypes: [
-            'main_frame', 'sub_frame', 'script', 'xmlhttprequest', 'image',
-            'stylesheet', 'font', 'media', 'websocket', 'other',
-          ],
-        },
-      })
+      rules.push({ id: id++, priority: 1, action: { type: 'block' }, condition: { urlFilter: `||${h}^`, resourceTypes: PHISH_TYPES } })
     }
+
+    // Ad/tracker feed (dynamic) — only while ad blocking is on. Excludes the
+    // main frame so we never block a top-level navigation to such a host.
+    if (settings.adblock !== false) {
+      const { [AD_KEY]: ads } = await chrome.storage.local.get(AD_KEY)
+      const AD_TYPES = [
+        'sub_frame', 'script', 'xmlhttprequest', 'image', 'stylesheet',
+        'font', 'media', 'websocket', 'other', 'object', 'ping',
+      ]
+      for (const h of ads || []) {
+        if (allowed.has(h)) continue
+        if (id > 8000 + ADFEED_CAP) break
+        rules.push({ id: id++, priority: 1, action: { type: 'block' }, condition: { urlFilter: `||${h}^`, resourceTypes: AD_TYPES } })
+      }
+    }
+
     await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules })
   } catch {
     // DNR unavailable or rule limit hit — heuristic path still protects main-frame.
@@ -246,10 +260,34 @@ async function updateFeed() {
   await syncBlockRules()
 }
 
-async function bumpStat(key) {
+// Refresh the ad/tracker domain feed (free, no key). Stored as adExtra and
+// turned into DNR rules by syncBlockRules when ad blocking is on.
+async function updateAdFeed() {
+  const settings = await getSettings()
+  if (settings.enabled === false || settings.adblock === false) return
+  const urls = settings.adFeeds || []
+  if (!urls.length) return
+  const set = new Set()
+  for (const url of urls) {
+    try {
+      const text = await (await fetch(url)).text()
+      for (const h of parseFeedText(text)) {
+        if (set.size >= ADFEED_CAP) break
+        set.add(h)
+      }
+    } catch {
+      // feed unreachable / no permission — skip
+    }
+  }
+  if (!set.size) return
+  await chrome.storage.local.set({ [AD_KEY]: [...set] })
+  await syncBlockRules()
+}
+
+async function bumpStat(key, by = 1) {
   const { stats } = await chrome.storage.local.get('stats')
-  const next = stats || { blocked: 0, proceeded: 0 }
-  next[key] = (next[key] || 0) + 1
+  const next = stats || { blocked: 0, proceeded: 0, adsBlocked: 0 }
+  next[key] = (next[key] || 0) + by
   await chrome.storage.local.set({ stats: next })
 }
 
@@ -469,13 +507,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
     if (msg.type === 'updateFeed') {
       await updateFeed()
+      await updateAdFeed()
+      sendResponse({ ok: true })
+      return
+    }
+    if (msg.type === 'adsBlocked') {
+      const n = Number(msg.n) || 0
+      if (n > 0) await bumpStat('adsBlocked', n)
       sendResponse({ ok: true })
       return
     }
     if (msg.type === 'getState') {
       sendResponse({
         settings: await getSettings(),
-        stats: (await chrome.storage.local.get('stats')).stats || { blocked: 0, proceeded: 0 },
+        stats: (await chrome.storage.local.get('stats')).stats || { blocked: 0, proceeded: 0, adsBlocked: 0 },
       })
       return
     }
@@ -494,8 +539,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         }
       }
       // Master switch toggled → install or tear down the hard-block rules.
-      if (msg.settings && 'enabled' in msg.settings) await syncBlockRules()
+      if (msg.settings && ('enabled' in msg.settings || 'adblock' in msg.settings)) await syncBlockRules()
       if (msg.settings && ('adblock' in msg.settings || 'enabled' in msg.settings)) await syncAdblock()
+      if (msg.settings && 'adblock' in msg.settings && next.adblock !== false) updateAdFeed()
       sendResponse({ ok: true })
       return
     }
@@ -540,20 +586,25 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   syncBlockRules()
   syncAdblock()
   updateFeed()
+  updateAdFeed()
 })
 
 // Keep the hard-block + adblock rules in sync whenever the worker spins up, and
-// refresh the optional feed on a daily alarm. All guarded so older Chrome / the
-// test harness (which mock only a subset of chrome.*) don't throw at load.
+// refresh the feeds on a daily alarm. All guarded so older Chrome / the test
+// harness (which mock only a subset of chrome.*) don't throw at load.
 chrome.runtime?.onStartup?.addListener(() => {
   syncBlockRules()
   syncAdblock()
   updateFeed()
+  updateAdFeed()
 })
 if (chrome.alarms) {
   chrome.alarms.create('lg-feed', { periodInMinutes: 1440 })
   chrome.alarms.onAlarm?.addListener((a) => {
-    if (a.name === 'lg-feed') updateFeed()
+    if (a.name === 'lg-feed') {
+      updateFeed()
+      updateAdFeed()
+    }
   })
 }
 // Best-effort initial sync (e.g. after a manual reload that isn't onInstalled).

@@ -271,6 +271,7 @@ async function scan() {
 
   // Page-level credential-phishing check runs independently of link badging.
   pageGuard()
+  countAds()
 
   const anchors = []
   const byHref = new Map() // href -> [anchors]
@@ -319,33 +320,55 @@ function queueScan() {
 // Network blocking (DNR) stops ad requests; this hides the leftover containers/
 // placeholders so blocked ads don't leave blank gaps. Conservative, generic
 // selectors only — specific enough not to hit real content.
-const COSMETIC_CSS = `
-ins.adsbygoogle, .adsbygoogle,
-iframe[src*="doubleclick.net"], iframe[src*="googlesyndication.com"],
-iframe[src*="adnxs.com"], iframe[src*="amazon-adsystem.com"],
-iframe[id^="google_ads_"], iframe[id*="ad_iframe"], iframe[name^="google_ads"],
-[id^="div-gpt-ad"], [id^="gpt-"], [id*="dfp-ad"], [id^="ad-slot"],
-.advertisement, .ad-banner, .ad-container, .ad-wrapper, .ad-placeholder,
-.adsbox, .ad-unit, .sponsored-ad, .banner-ad,
-[data-ad-slot], [data-ad-client], [data-adunit],
-.taboola, .trc_rbox_div, [id^="taboola-"], .OUTBRAIN, .ob-widget,
-.mgbox, [id^="M"][id*="ScriptRootC"], .rcjsload {
-  display: none !important;
-}`
+const AD_SELECTOR = [
+  'ins.adsbygoogle', '.adsbygoogle',
+  'iframe[src*="doubleclick.net"]', 'iframe[src*="googlesyndication.com"]',
+  'iframe[src*="adnxs.com"]', 'iframe[src*="amazon-adsystem.com"]',
+  'iframe[id^="google_ads_"]', 'iframe[id*="ad_iframe"]', 'iframe[name^="google_ads"]',
+  '[id^="div-gpt-ad"]', '[id^="gpt-"]', '[id*="dfp-ad"]', '[id^="ad-slot"]',
+  '.advertisement', '.ad-banner', '.ad-container', '.ad-wrapper', '.ad-placeholder',
+  '.adsbox', '.ad-unit', '.sponsored-ad', '.banner-ad',
+  '[data-ad-slot]', '[data-ad-client]', '[data-adunit]',
+  '.taboola', '.trc_rbox_div', '[id^="taboola-"]', '.OUTBRAIN', '.ob-widget',
+  '.mgbox', '.rcjsload',
+].join(',')
+const COSMETIC_CSS = `${AD_SELECTOR}{display:none !important;}`
 
+let adblockOn = false
 let cosmeticApplied = false
+const countedAds = typeof WeakSet !== 'undefined' ? new WeakSet() : null
+
 async function applyCosmetic() {
   if (cosmeticApplied) return
   const resp = await send({ type: 'getState' })
   const s = resp && resp.settings
   if (!s || s.enabled === false || s.adblock === false) return
   cosmeticApplied = true
+  adblockOn = true
   const style = document.createElement('style')
   style.id = 'lg-cosmetic'
   style.textContent = COSMETIC_CSS
   const mount = () => (document.head || document.documentElement).appendChild(style)
   if (document.head || document.documentElement) mount()
   else document.addEventListener('DOMContentLoaded', mount, { once: true })
+  setTimeout(countAds, 1200)
+}
+
+// Count freshly-hidden ad containers and report them for the blocked counter.
+function countAds() {
+  if (!adblockOn || !countedAds) return
+  let n = 0
+  try {
+    for (const el of document.querySelectorAll(AD_SELECTOR)) {
+      if (!countedAds.has(el)) {
+        countedAds.add(el)
+        n++
+      }
+    }
+  } catch {
+    // bad selector on some engines — ignore
+  }
+  if (n) send({ type: 'adsBlocked', n })
 }
 applyCosmetic()
 

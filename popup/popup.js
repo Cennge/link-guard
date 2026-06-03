@@ -160,6 +160,7 @@ async function init() {
 
   $('stat-blocked').textContent = stats.blocked
   $('stat-proceeded').textContent = stats.proceeded
+  $('stat-ads').textContent = stats.adsBlocked || 0
 
   // Live copy of settings that drives the protection gauge.
   const state = { ...settings }

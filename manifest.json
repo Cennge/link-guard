@@ -15,7 +15,8 @@
   "host_permissions": [
     "https://urlhaus.abuse.ch/*",
     "https://raw.githubusercontent.com/*",
-    "https://openphish.com/*"
+    "https://openphish.com/*",
+    "https://pgl.yoyo.org/*"
   ],
   "optional_host_permissions": [
     "https://*/*"
