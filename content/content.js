@@ -334,6 +334,27 @@ const AD_SELECTOR = [
 ].join(',')
 const COSMETIC_CSS = `${AD_SELECTOR}{display:none !important;}`
 
+// Per-site cosmetic rules for sites whose ad containers aren't covered by the
+// generic selectors. Keyed by a hostname substring. Best-effort — easy to tune.
+const SITE_COSMETICS = [
+  {
+    match: /rezka|hdrezka/i,
+    css: `
+      [id^="yandex_rtb"], .adfox, [id*="adfox"], [id*="AdFox"],
+      .b-rgmega-container, .b-rgmega, .rgmega, .b-promo__block,
+      .reclama, .reklama, [class*="reklama"], [class*="reclama"],
+      .ads, .ad-holder, .partner-block, .b-sidebar__inner .clearfix[id],
+      div[id^="adv_"], div[id^="ad_"], a[href*="//ad."], a[target="_blank"][href*="utm_"] {
+        display: none !important;
+      }`,
+  },
+]
+function siteCosmeticCss() {
+  let css = ''
+  for (const r of SITE_COSMETICS) if (r.match.test(location.hostname)) css += r.css
+  return css
+}
+
 let adblockOn = false
 let cosmeticApplied = false
 const countedAds = typeof WeakSet !== 'undefined' ? new WeakSet() : null
@@ -347,7 +368,7 @@ async function applyCosmetic() {
   adblockOn = true
   const style = document.createElement('style')
   style.id = 'lg-cosmetic'
-  style.textContent = COSMETIC_CSS
+  style.textContent = COSMETIC_CSS + siteCosmeticCss()
   const mount = () => (document.head || document.documentElement).appendChild(style)
   if (document.head || document.documentElement) mount()
   else document.addEventListener('DOMContentLoaded', mount, { once: true })
