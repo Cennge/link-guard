@@ -1,52 +1,45 @@
-// Anti-adblock scriptlet engine. Runs at document_start in the ISOLATED world,
-// then injects a tiny uBO-style scriptlet runtime into the PAGE (MAIN) world so
-// it can neutralise the anti-adblock detectors page scripts rely on BEFORE they
-// run. Gated by the adblock setting and the per-site ad allowlist, so a site the
-// user exempted ("не блокировать рекламу здесь") is never touched.
+// Anti-adblock scriptlet engine — MAIN-world content script (registered
+// dynamically by the background via chrome.scripting with world:'MAIN'). Running
+// as a content script means it executes in the page context at document_start
+// and is EXEMPT from the page CSP (a DOM-injected <script> is not, and strict-CSP
+// sites like rezka.ag block it). The background gates registration on the adblock
+// setting and the per-site ad allowlist (excludeMatches), so there's no chrome.*
+// dependency here and exempted sites are never touched.
 //
-// Scriptlets supported (a safe subset of uBlock Origin's library):
+// Scriptlets (a safe subset of uBlock Origin's library):
 //   set-constant(chain, value)      — pin window.x.y to a constant, ignore writes
 //   abort-on-property-read(chain)   — throw when a bait property is read
 //   nofab                           — neutralise FuckAdBlock / BlockAdBlock family
 //
-// `nofab` is applied GLOBALLY: it only ever touches the FuckAdBlock/BlockAdBlock
-// namespace, which legitimate sites don't use, so it can't break page content —
-// it just stops the "disable your adblocker" wall. The riskier set-constant
-// flag-pinning is applied PER-SITE only, so ordinary sites stay untouched.
-
-// Rules applied on every http(s) page. Keep this list to dedicated anti-adblock
-// library namespaces only (zero collision with real site code).
-const GLOBAL_RULES = [['nofab']]
-
-// Per-site rules, keyed by a hostname regex. Conservative: only well-known
-// anti-adblock flag names so we never shadow a property a real site reads.
-const SITE_RULES = [
-  {
-    match: /rezka|hdrezka/i,
-    rules: [
-      ['set-constant', 'adb', 'false'],
-      ['set-constant', 'adblock', 'false'],
-      ['set-constant', 'adBlockEnabled', 'false'],
-      ['set-constant', 'isAdBlockActive', 'false'],
-      ['set-constant', 'canRunAds', 'true'],
-      ['set-constant', 'canShowAds', 'true'],
-    ],
-  },
-]
-
-function collectRules() {
-  const out = GLOBAL_RULES.slice()
-  for (const r of SITE_RULES) if (r.match.test(location.hostname)) out.push(...r.rules)
-  return out
-}
-
-// The runtime injected into the page. It receives the rule list as a JSON
-// literal so nothing from the isolated world leaks in.
-function pageRuntime(rules) {
+// `nofab` runs on every page: it only touches the FuckAdBlock/BlockAdBlock
+// namespace (legit sites don't use it), so it can't break content — it just
+// removes the "disable your adblocker" wall. The riskier flag-pinning
+// set-constant rules are per-site only, so ordinary sites stay untouched.
+;(function () {
   'use strict'
-  if (!rules || !rules.length) return
-  var noop = function () {}
 
+  var GLOBAL_RULES = [['nofab']]
+  var SITE_RULES = [
+    {
+      match: /rezka|hdrezka/i,
+      rules: [
+        ['set-constant', 'adb', 'false'],
+        ['set-constant', 'adblock', 'false'],
+        ['set-constant', 'adBlockEnabled', 'false'],
+        ['set-constant', 'isAdBlockActive', 'false'],
+        ['set-constant', 'canRunAds', 'true'],
+        ['set-constant', 'canShowAds', 'true'],
+      ],
+    },
+  ]
+
+  var rules = GLOBAL_RULES.slice()
+  for (var i = 0; i < SITE_RULES.length; i++) {
+    if (SITE_RULES[i].match.test(location.hostname)) rules = rules.concat(SITE_RULES[i].rules)
+  }
+  if (!rules.length) return
+
+  var noop = function () {}
   function decode(v) {
     switch (v) {
       case 'false': return false
@@ -64,8 +57,8 @@ function pageRuntime(rules) {
     return v
   }
 
-  // uBO-style set-constant: pin the property to a constant and keep it pinned
-  // even if the page assigns to it later (re-installs down the chain on set).
+  // uBO-style set-constant: pin the property and keep it pinned even if the page
+  // assigns to it later (re-installs down the chain on set).
   function setConstant(chain, rawVal) {
     var value = decode(rawVal)
     var parts = chain.split('.')
@@ -120,8 +113,7 @@ function pageRuntime(rules) {
     install(window, 0)
   }
 
-  // Neutralise the FuckAdBlock / BlockAdBlock family: the fake reports
-  // "no adblocker", fires the not-detected callback, and no-ops everything else.
+  // Neutralise the FuckAdBlock / BlockAdBlock family.
   function nofab() {
     var Fake = function () {
       var self = this
@@ -149,24 +141,4 @@ function pageRuntime(rules) {
       else if (r[0] === 'nofab') nofab()
     } catch (e) {}
   }
-}
-
-try {
-  chrome.storage.local.get(['settings', 'adAllow'], (data) => {
-    const s = (data && data.settings) || {}
-    if (s.enabled === false || s.adblock === false) return
-    const h = location.hostname.replace(/^www\./, '')
-    const allowed = (data.adAllow || []).some((e) => h === e || h.endsWith('.' + e))
-    if (allowed) return // user disabled ad blocking on this site
-
-    const rules = collectRules()
-    if (!rules.length) return
-    const code = `(${pageRuntime.toString()})(${JSON.stringify(rules)});`
-    const sc = document.createElement('script')
-    sc.textContent = code
-    ;(document.documentElement || document.head).appendChild(sc)
-    sc.remove()
-  })
-} catch (e) {
-  // storage unavailable / context invalidated — do nothing
-}
+})()

@@ -52,6 +52,10 @@ global.chrome = {
     updateEnabledRulesets: async () => {},
     getEnabledRulesets: async () => [],
   },
+  scripting: {
+    registerContentScripts: async (scripts) => { global.mockRegisteredScripts = scripts },
+    unregisterContentScripts: async () => { global.mockRegisteredScripts = [] },
+  },
   alarms: {
     create: () => {},
     onAlarm: noopEvent(),
@@ -297,6 +301,27 @@ async function runTests() {
   await sendMessage({ type: 'adAllowSet', host: 'example-site.com', on: false })
   st = await sendMessage({ type: 'getState' })
   assertEqual(st.adAllow.includes('example-site.com'), false, 'adAllowSet убирает сайт')
+
+  // 30. MAIN-world content scripts register when ad blocking is on
+  await sendMessage({ type: 'setSettings', settings: { adblock: true } })
+  let reg = global.mockRegisteredScripts || []
+  assertEqual(reg.length, 2, 'регистрируются 2 MAIN-world скрипта при включённом adblock')
+  assertEqual(reg.every((r) => r.world === 'MAIN' && r.runAt === 'document_start'), true, 'MAIN-world @ document_start')
+
+  // 31. Per-site ad allowlist becomes excludeMatches on the registered scripts
+  await sendMessage({ type: 'adAllowSet', host: 'rezka.ag', on: true })
+  reg = global.mockRegisteredScripts || []
+  assertEqual(
+    reg[0].excludeMatches.includes('*://rezka.ag/*') && reg[0].excludeMatches.includes('*://*.rezka.ag/*'),
+    true,
+    'allowlisted сайт попадает в excludeMatches'
+  )
+  await sendMessage({ type: 'adAllowSet', host: 'rezka.ag', on: false })
+
+  // 32. Disabling ad blocking unregisters the MAIN-world scripts
+  await sendMessage({ type: 'setSettings', settings: { adblock: false } })
+  assertEqual((global.mockRegisteredScripts || []).length, 0, 'скрипты снимаются при выключенном adblock')
+  await sendMessage({ type: 'setSettings', settings: { adblock: true } })
 
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
