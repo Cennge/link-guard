@@ -20,6 +20,11 @@
   "optional_host_permissions": [
     "https://*/*"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "ads", "enabled": false, "path": "rules/ads.json" }
+    ]
+  },
   "background": {
     "service_worker": "src/background.js",
     "type": "module"

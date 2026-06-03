@@ -315,6 +315,40 @@ function queueScan() {
   setTimeout(() => requestAnimationFrame(scan), 250)
 }
 
+// --- Cosmetic ad filtering -----------------------------------------------------
+// Network blocking (DNR) stops ad requests; this hides the leftover containers/
+// placeholders so blocked ads don't leave blank gaps. Conservative, generic
+// selectors only — specific enough not to hit real content.
+const COSMETIC_CSS = `
+ins.adsbygoogle, .adsbygoogle,
+iframe[src*="doubleclick.net"], iframe[src*="googlesyndication.com"],
+iframe[src*="adnxs.com"], iframe[src*="amazon-adsystem.com"],
+iframe[id^="google_ads_"], iframe[id*="ad_iframe"], iframe[name^="google_ads"],
+[id^="div-gpt-ad"], [id^="gpt-"], [id*="dfp-ad"], [id^="ad-slot"],
+.advertisement, .ad-banner, .ad-container, .ad-wrapper, .ad-placeholder,
+.adsbox, .ad-unit, .sponsored-ad, .banner-ad,
+[data-ad-slot], [data-ad-client], [data-adunit],
+.taboola, .trc_rbox_div, [id^="taboola-"], .OUTBRAIN, .ob-widget,
+.mgbox, [id^="M"][id*="ScriptRootC"], .rcjsload {
+  display: none !important;
+}`
+
+let cosmeticApplied = false
+async function applyCosmetic() {
+  if (cosmeticApplied) return
+  const resp = await send({ type: 'getState' })
+  const s = resp && resp.settings
+  if (!s || s.enabled === false || s.adblock === false) return
+  cosmeticApplied = true
+  const style = document.createElement('style')
+  style.id = 'lg-cosmetic'
+  style.textContent = COSMETIC_CSS
+  const mount = () => (document.head || document.documentElement).appendChild(style)
+  if (document.head || document.documentElement) mount()
+  else document.addEventListener('DOMContentLoaded', mount, { once: true })
+}
+applyCosmetic()
+
 // Initial pass once the DOM is ready.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', queueScan)

@@ -23,6 +23,8 @@ const defaultSettings = {
   badges: true,
   // On-page credential-phishing guard (the warning banner).
   pageGuard: true,
+  // Block ads / trackers via the bundled DNR ruleset + cosmetic CSS.
+  adblock: true,
   // Known-phishing host feeds — all free, no API key, no registration. They are
   // DOWNLOADED and checked locally (no browsing data leaves the device). Set
   // feedEnabled:false to go fully offline.
@@ -180,6 +182,20 @@ async function syncBlockRules() {
     await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules })
   } catch {
     // DNR unavailable or rule limit hit — heuristic path still protects main-frame.
+  }
+}
+
+// Enable/disable the bundled ad/tracker DNR ruleset per settings.
+async function syncAdblock() {
+  if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateEnabledRulesets) return
+  try {
+    const s = await getSettings()
+    const on = s.enabled !== false && s.adblock !== false
+    await chrome.declarativeNetRequest.updateEnabledRulesets(
+      on ? { enableRulesetIds: ['ads'] } : { disableRulesetIds: ['ads'] }
+    )
+  } catch {
+    // ruleset API unavailable / id mismatch — ignore
   }
 }
 
@@ -479,6 +495,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       }
       // Master switch toggled → install or tear down the hard-block rules.
       if (msg.settings && 'enabled' in msg.settings) await syncBlockRules()
+      if (msg.settings && ('adblock' in msg.settings || 'enabled' in msg.settings)) await syncAdblock()
       sendResponse({ ok: true })
       return
     }
@@ -521,14 +538,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     }
   }
   syncBlockRules()
+  syncAdblock()
   updateFeed()
 })
 
-// Keep the hard-block rules in sync whenever the worker spins up, and refresh
-// the optional feed on a 12h alarm. All guarded so older Chrome / the test
-// harness (which mock only a subset of chrome.*) don't throw at load.
+// Keep the hard-block + adblock rules in sync whenever the worker spins up, and
+// refresh the optional feed on a daily alarm. All guarded so older Chrome / the
+// test harness (which mock only a subset of chrome.*) don't throw at load.
 chrome.runtime?.onStartup?.addListener(() => {
   syncBlockRules()
+  syncAdblock()
   updateFeed()
 })
 if (chrome.alarms) {
@@ -539,3 +558,4 @@ if (chrome.alarms) {
 }
 // Best-effort initial sync (e.g. after a manual reload that isn't onInstalled).
 syncBlockRules()
+syncAdblock()

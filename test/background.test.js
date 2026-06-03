@@ -49,6 +49,8 @@ global.chrome = {
       if (removeRuleIds.length) dnrRules = dnrRules.filter((r) => !removeRuleIds.includes(r.id))
       dnrRules = dnrRules.concat(addRules)
     },
+    updateEnabledRulesets: async () => {},
+    getEnabledRulesets: async () => [],
   },
   alarms: {
     create: () => {},

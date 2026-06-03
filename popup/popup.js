@@ -195,6 +195,7 @@ async function init() {
   wire('badges', 'badges')
   wire('pageGuard', 'pageGuard')
   wire('feedEnabled', 'feedEnabled')
+  wire('adblock', 'adblock')
 
   refreshGauge()
 
