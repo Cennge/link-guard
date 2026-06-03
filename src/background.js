@@ -234,39 +234,11 @@ async function syncAdblock() {
   }
 }
 
-// Register the MAIN-world content scripts (pop-under guard + anti-adblock
-// scriptlets) at document_start. They run in the page's JS context and are
-// EXEMPT from the page CSP — unlike a DOM-injected <script>, which strict-CSP
-// sites (e.g. rezka.ag) block. Gating lives here: registered only while ad
-// blocking is on, and sites on the per-site ad allowlist are excluded.
-const MAIN_SCRIPT_IDS = ['lg-antipopup-main', 'lg-scriptlets-main']
-async function syncContentScripts() {
-  if (!chrome.scripting || !chrome.scripting.registerContentScripts) return
-  try {
-    // Always clear our previous registration first (idempotent re-sync).
-    try { await chrome.scripting.unregisterContentScripts({ ids: MAIN_SCRIPT_IDS }) } catch {}
-
-    const s = await getSettings()
-    if (s.enabled === false || s.adblock === false) return
-
-    // Exclude allowlisted sites ("не блокировать рекламу здесь") and their subdomains.
-    const exclude = []
-    for (const h of await getAdAllow()) exclude.push(`*://${h}/*`, `*://*.${h}/*`)
-    const common = {
-      matches: ['http://*/*', 'https://*/*'],
-      runAt: 'document_start',
-      world: 'MAIN',
-      allFrames: true,
-      ...(exclude.length ? { excludeMatches: exclude } : {}),
-    }
-    await chrome.scripting.registerContentScripts([
-      { id: 'lg-antipopup-main', js: ['content/antipopup.main.js'], ...common },
-      { id: 'lg-scriptlets-main', js: ['content/scriptlets.main.js'], ...common },
-    ])
-  } catch {
-    // scripting API / MAIN world unavailable — pop-under + scriptlets just won't run.
-  }
-}
+// The MAIN-world hooks (pop-under guard + anti-adblock scriptlets) are declared
+// directly in the manifest with "world": "MAIN" and run at document_start. Their
+// per-page gating (master switch / adblock / per-site allowlist) is handled by
+// the ISOLATED content script content/gate.js, which marks the document so the
+// hooks stand down — no background registration needed.
 
 // Parse one feed body (JSON list, /etc/hosts file, plain domains, or URL list)
 // into normalised hostnames.
@@ -587,7 +559,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       else set.add(host)
       await chrome.storage.local.set({ [AD_ALLOW_KEY]: [...set] })
       await syncBlockRules()
-      await syncContentScripts() // refresh excludeMatches for this site
       sendResponse({ ok: true, allow: [...set] })
       return
     }
@@ -608,7 +579,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       // Master switch toggled → install or tear down the hard-block rules.
       if (msg.settings && ('enabled' in msg.settings || 'adblock' in msg.settings)) await syncBlockRules()
       if (msg.settings && ('adblock' in msg.settings || 'enabled' in msg.settings)) await syncAdblock()
-      if (msg.settings && ('adblock' in msg.settings || 'enabled' in msg.settings)) await syncContentScripts()
       if (msg.settings && 'adblock' in msg.settings && next.adblock !== false) updateAdFeed()
       sendResponse({ ok: true })
       return
@@ -653,7 +623,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
   syncBlockRules()
   syncAdblock()
-  syncContentScripts()
   updateFeed()
   updateAdFeed()
 })
@@ -664,7 +633,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 chrome.runtime?.onStartup?.addListener(() => {
   syncBlockRules()
   syncAdblock()
-  syncContentScripts()
   updateFeed()
   updateAdFeed()
 })
@@ -680,4 +648,3 @@ if (chrome.alarms) {
 // Best-effort initial sync (e.g. after a manual reload that isn't onInstalled).
 syncBlockRules()
 syncAdblock()
-syncContentScripts()

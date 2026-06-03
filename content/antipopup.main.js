@@ -1,9 +1,13 @@
-// Pop-under / click-under guard — MAIN-world content script (registered
-// dynamically by the background via chrome.scripting with world:'MAIN', so it
-// runs in the page's JS context at document_start and is EXEMPT from the page's
-// Content-Security-Policy — unlike a DOM-injected <script>, which strict-CSP
-// sites like rezka.ag block). No chrome.* access here: the background decides
-// whether to register it at all (adblock on, site not allowlisted).
+// Pop-under / click-under guard — MAIN-world content script (declared in the
+// manifest with "world": "MAIN", so it runs in the page's JS context at
+// document_start and is EXEMPT from the page Content-Security-Policy — unlike a
+// DOM-injected <script>, which strict-CSP sites block). No chrome.* access here.
+//
+// The companion ISOLATED script gate.js marks the document with
+// data-lg-adblock-off when ad blocking is disabled for this page (master switch
+// off, adblock off, or the site is on the per-site allowlist). This hook reads
+// that attribute at CALL time and stands down, so allowlisted sites behave
+// normally.
 //
 // Conservative: allow the first window.open per real user gesture (so normal
 // "open in new tab" links and OAuth popups still work) and block background
@@ -26,6 +30,11 @@
       }
     }
     window.open = function (url) {
+      // Stand down if ad blocking is off for this page (gate.js sets this).
+      var root = document.documentElement
+      if (root && root.getAttribute('data-lg-adblock-off')) {
+        return realOpen.apply(window, arguments)
+      }
       var now = Date.now()
       var fresh = (now - lastGesture) < 1000
       if (gestureId !== lastGesture) { gestureId = lastGesture; opens = 0 }

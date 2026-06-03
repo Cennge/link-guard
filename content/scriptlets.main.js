@@ -1,10 +1,9 @@
-// Anti-adblock scriptlet engine — MAIN-world content script (registered
-// dynamically by the background via chrome.scripting with world:'MAIN'). Running
-// as a content script means it executes in the page context at document_start
-// and is EXEMPT from the page CSP (a DOM-injected <script> is not, and strict-CSP
-// sites like rezka.ag block it). The background gates registration on the adblock
-// setting and the per-site ad allowlist (excludeMatches), so there's no chrome.*
-// dependency here and exempted sites are never touched.
+// Anti-adblock scriptlet engine — MAIN-world content script (declared in the
+// manifest with "world": "MAIN"). Running as a content script means it executes
+// in the page context at document_start and is EXEMPT from the page CSP (a
+// DOM-injected <script> is not, and strict-CSP sites block it). No chrome.*
+// dependency here; the only scriptlet applied everywhere is `nofab`, which is
+// inert on sites without anti-adblock libraries, so it needs no per-site gating.
 //
 // Scriptlets (a safe subset of uBlock Origin's library):
 //   set-constant(chain, value)      — pin window.x.y to a constant, ignore writes
