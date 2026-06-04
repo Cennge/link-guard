@@ -230,6 +230,39 @@ async function syncBlockRules() {
 const ALWAYS_RULESETS = ['ads', 'ads-regex', 'ads-allow']
 const NET_SLOTS = ['ads-net-0', 'ads-net-1', 'ads-net-2', 'ads-net-3', 'ads-net-4', 'ads-net-5']
 let _rulesetIndex = null
+// --- Cosmetic filtering data (domain-specific element-hiding) --------------
+// Loaded lazily into the service worker and served per-host to content.js, so
+// the ~0.5 MB file lives in the worker, not in every page.
+let _cosmetics = null
+async function getCosmeticsData() {
+  if (_cosmetics) return _cosmetics
+  try {
+    _cosmetics = await (await fetch(chrome.runtime.getURL('data/cosmetics.json'))).json()
+  } catch {
+    _cosmetics = {}
+  }
+  return _cosmetics
+}
+// CSS for a host = union of rules for the host and every parent domain down to
+// the registrable (e.g. a.b.example.com → a.b.example.com, b.example.com,
+// example.com). Hides are batched into one selector list; :style() rules kept.
+function cosmeticCssForHost(data, host) {
+  host = String(host || '').toLowerCase().replace(/^www\./, '')
+  if (!host) return ''
+  const parts = host.split('.')
+  const hides = []
+  let css = ''
+  for (let i = 0; i < parts.length - 1; i++) {
+    const e = data[parts.slice(i).join('.')]
+    if (!e) continue
+    if (e.h) for (const sel of e.h) hides.push(sel)
+    if (e.s) for (const [sel, decl] of e.s) css += `${sel}{${decl}}`
+    if (hides.length > 5000) break // page-size guard
+  }
+  if (hides.length) css += hides.join(',') + '{display:none!important}'
+  return css
+}
+
 async function getRulesetIndex() {
   if (_rulesetIndex) return _rulesetIndex
   try {
@@ -576,6 +609,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       await updateFeed()
       await updateAdFeed()
       sendResponse({ ok: true })
+      return
+    }
+    if (msg.type === 'getCosmetics' && msg.host) {
+      const s = await getSettings()
+      if (s.enabled === false || s.adblock === false) { sendResponse({ css: '' }); return }
+      sendResponse({ css: cosmeticCssForHost(await getCosmeticsData(), msg.host) })
       return
     }
     if (msg.type === 'adsBlocked') {

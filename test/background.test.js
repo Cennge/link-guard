@@ -298,6 +298,14 @@ async function runTests() {
   st = await sendMessage({ type: 'getState' })
   assertEqual(st.adAllow.includes('example-site.com'), false, 'adAllowSet убирает сайт')
 
+  // 30. Domain-specific cosmetics are served per-host (subdomain inherits)
+  const cos = await sendMessage({ type: 'getCosmetics', host: 'www.advfn.com' })
+  assertEqual(!!(cos && cos.css && cos.css.includes('display:none')), true, 'getCosmetics возвращает CSS для известного домена')
+  const cosSub = await sendMessage({ type: 'getCosmetics', host: 'sub.advfn.com' })
+  assertEqual(cosSub.css === cos.css, true, 'поддомен наследует косметику родительского домена')
+  const cosNone = await sendMessage({ type: 'getCosmetics', host: 'no-such-domain-xyz.test' })
+  assertEqual(cosNone.css, '', 'неизвестный домен — пустой CSS')
+
   // Очистка
   await sendMessage({ type: 'removeUserRule', host: paypalHost })
   await sendMessage({ type: 'removeUserRule', host: 'example.com' })

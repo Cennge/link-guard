@@ -366,6 +366,12 @@ async function applyCosmetic() {
   const mount = () => (document.head || document.documentElement).appendChild(style)
   if (document.head || document.documentElement) mount()
   else document.addEventListener('DOMContentLoaded', mount, { once: true })
+
+  // Domain-specific element-hiding from the compiled EasyList cosmetics, served
+  // per-host by the background so the big dataset stays in the worker.
+  send({ type: 'getCosmetics', host: location.hostname }).then((r) => {
+    if (r && r.css) style.textContent += r.css
+  })
   setTimeout(countAds, 1200)
 }
 
