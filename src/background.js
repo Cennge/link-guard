@@ -219,18 +219,58 @@ async function syncBlockRules() {
   }
 }
 
-// Enable/disable the bundled ad/tracker DNR ruleset per settings.
+// Enable/disable the bundled ad/tracker DNR rulesets per settings.
+//
+// Always-on rulesets are small (curated core, regexes, EasyList exceptions +
+// redirects). The big EasyList/EasyPrivacy block rules are split into ads-net-N
+// chunks declared disabled in the manifest; we enable as many as the browser's
+// static-rule budget allows at runtime (getAvailableStaticRuleCount) — the
+// uBlock-Origin-Lite approach. Enabling exceptions ALWAYS (even if some block
+// chunks don't fit) means we never over-block and break a site.
+const ALWAYS_RULESETS = ['ads', 'ads-regex', 'ads-allow']
+const NET_SLOTS = ['ads-net-0', 'ads-net-1', 'ads-net-2', 'ads-net-3', 'ads-net-4', 'ads-net-5']
+let _rulesetIndex = null
+async function getRulesetIndex() {
+  if (_rulesetIndex) return _rulesetIndex
+  try {
+    _rulesetIndex = await (await fetch(chrome.runtime.getURL('rules/index.json'))).json()
+  } catch {
+    _rulesetIndex = { net: [] }
+  }
+  return _rulesetIndex
+}
+
 async function syncAdblock() {
-  if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateEnabledRulesets) return
+  const dnr = chrome.declarativeNetRequest
+  if (!dnr || !dnr.updateEnabledRulesets) return
   try {
     const s = await getSettings()
     const on = s.enabled !== false && s.adblock !== false
-    const ids = ['ads', 'ads-extra', 'ads-regex']
-    await chrome.declarativeNetRequest.updateEnabledRulesets(
-      on ? { enableRulesetIds: ids } : { disableRulesetIds: ids }
-    )
+    if (!on) {
+      await dnr.updateEnabledRulesets({ disableRulesetIds: [...ALWAYS_RULESETS, ...NET_SLOTS] })
+      return
+    }
+    // 1) Turn on the always-on rulesets first.
+    await dnr.updateEnabledRulesets({ enableRulesetIds: ALWAYS_RULESETS })
+
+    // 2) Greedily enable as many ad-net chunks as fit the static-rule budget.
+    const index = await getRulesetIndex()
+    const counts = new Map((index.net || []).map((n) => [n.id, n.count || 0]))
+    let budget = Infinity
+    if (dnr.getAvailableStaticRuleCount) {
+      try { budget = await dnr.getAvailableStaticRuleCount() } catch { budget = 0 }
+    }
+    const enable = []
+    const disable = []
+    for (const id of NET_SLOTS) {
+      const c = counts.get(id) || 0
+      if (c > 0 && c <= budget) { enable.push(id); budget -= c }
+      else disable.push(id)
+    }
+    if (enable.length) await dnr.updateEnabledRulesets({ enableRulesetIds: enable })
+    if (disable.length) await dnr.updateEnabledRulesets({ disableRulesetIds: disable })
   } catch {
-    // ruleset API unavailable / id mismatch — ignore
+    // ruleset API unavailable / budget query failed — always-on rules still apply.
   }
 }
 
